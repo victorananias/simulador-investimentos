@@ -254,8 +254,7 @@ h1 em {
   font: inherit;
   outline: none;
   transition: border-color 0.18s ease, background-color 0.18s ease;
-  appearance: none;
-  -webkit-appearance: none;
+  color-scheme: dark;
 }
 
 .extra-input:focus,
@@ -633,6 +632,32 @@ td.highlight {
 
 tr.current-row td { color: var(--text); }
 tr.current-row td.highlight { color: var(--accent); }
+
+tr.selected-row td { color: var(--text); }
+tr.selected-row td.highlight { color: var(--accent); }
+tr.selected-row { background: rgba(200,240,96,0.04); }
+
+.scenario-select-btn {
+  border: 1px solid rgba(200,240,96,0.3);
+  border-radius: 999px;
+  background: rgba(200,240,96,0.06);
+  color: var(--accent);
+  padding: 5px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+.scenario-select-btn:hover {
+  border-color: rgba(200,240,96,0.6);
+  background: rgba(200,240,96,0.12);
+}
+.scenario-select-btn--active {
+  border-color: rgba(200,240,96,0.7);
+  background: rgba(200,240,96,0.16);
+  color: #c8f060;
+}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }

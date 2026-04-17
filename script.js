@@ -42,6 +42,7 @@ const EXTRA_MONTHS = [
 let chartInst;
 let extrasState = [];
 let savedScenarios = [];
+let selectedScenarioId = null;
 
 function normalizeScenarioColor(color, fallback = '#4ade80') {
   const normalized = String(color || '').trim();
@@ -214,6 +215,7 @@ function setupScenarioControls() {
     if (index === -1) return;
 
     savedScenarios.splice(index, 1);
+    if (selectedScenarioId === scenarioId) selectedScenarioId = null;
     calcular();
   });
 
@@ -229,7 +231,14 @@ function setupScenarioControls() {
     calcular();
   });
 
-  
+  compareBody.addEventListener('click', event => {
+    const selectButton = event.target.closest('[data-scenario-select]');
+    if (!selectButton) return;
+
+    const scenarioId = selectButton.dataset.scenarioSelect;
+    selectedScenarioId = selectedScenarioId === scenarioId ? null : scenarioId;
+    calcular();
+  });
 }
 
 function getActiveExtras() {
@@ -650,6 +659,8 @@ function buildTable(currentKey) {
     const rendMes = r.saldo * tm;
     const tr = document.createElement('tr');
     if (scenario.id === currentKey) tr.className = 'current-row';
+    const isSelected = scenario.id === selectedScenarioId;
+    if (isSelected) tr.className = 'selected-row';
     tr.innerHTML = `
       <td>${escapeHtml(scenario.name)}</td>
       <td><input class="scenario-visible-check" type="checkbox" data-scenario-visible="${escapeHtml(scenario.id)}"${scenario.visible === false ? '' : ' checked'}></td>
@@ -660,13 +671,18 @@ function buildTable(currentKey) {
       <td>${fmtFull(scenario.meta)}</td>
       <td class="highlight">${mesesParaTexto(r.meses)}</td>
       <td class="highlight">${fmt(rendMes)}</td>
-      <td><button type="button" class="scenario-delete-btn" data-scenario-delete="${escapeHtml(scenario.id)}">Excluir</button></td>
+      <td>
+        <button type="button" class="scenario-select-btn${isSelected ? ' scenario-select-btn--active' : ''}" data-scenario-select="${escapeHtml(scenario.id)}">${isSelected ? 'Selecionado' : 'Selecionar'}</button>
+        <button type="button" class="scenario-delete-btn" data-scenario-delete="${escapeHtml(scenario.id)}">Excluir</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
 function calcular() {
+  const selectedScenario = selectedScenarioId ? savedScenarios.find(s => s.id === selectedScenarioId) : null;
+
   const inicial = +document.getElementById('inicial').value;
   const aporte = +document.getElementById('aporte').value;
   const taxa = +document.getElementById('juros').value;
@@ -677,7 +693,15 @@ function calcular() {
   saveControlValues();
   syncDisplayValues();
 
-  const com = simular(inicial, aporte, taxaAnual, meta, extras);
+  const com = selectedScenario
+    ? simular(
+        selectedScenario.inicial,
+        selectedScenario.aporte,
+        selectedScenario.taxa / 100,
+        selectedScenario.meta,
+        selectedScenario.extras.map(sanitizeExtraDraft).map(e => ({ month: Number(e.month), amount: normalizeNumberInput(e.amount) || 0, recurrence: e.recurrence, year: e.recurrence === 'specific' ? Number(e.year) : null })).filter(e => e.amount > 0)
+      )
+    : simular(inicial, aporte, taxaAnual, meta, extras);
   const visibleScenarios = savedScenarios.filter(scenario => scenario.visible !== false);
   const savedScenarioSeries = visibleScenarios.map(scenario => {
     const scenarioExtras = scenario.extras
@@ -713,9 +737,10 @@ function calcular() {
   document.getElementById('c-juros').textContent = fmt(ganho);
   document.getElementById('c-juros-sub').textContent = Math.round(ganho / com.saldo * 100) + '% do patrimônio';
 
-  const tm = Math.pow(1 + taxaAnual, 1 / 12) - 1;
+  const activeTaxa = selectedScenario ? selectedScenario.taxa / 100 : taxaAnual;
+  const tm = Math.pow(1 + activeTaxa, 1 / 12) - 1;
   const rMes = com.saldo * tm;
-  const rAno = com.saldo * taxaAnual;
+  const rAno = com.saldo * activeTaxa;
   const rDia = rAno / 365;
 
   document.getElementById('r-mes').textContent = fmt(rMes);
@@ -732,11 +757,11 @@ function calcular() {
       labels: chartLabels,
       datasets: [
         {
-          label: 'Patrimônio projetado',
+          label: selectedScenario ? selectedScenario.name : 'Patrimônio projetado',
           data: alignSeriesData(com.pat, chartLabels.length),
-          borderColor: '#c8f060',
-          backgroundColor: 'rgba(200,240,96,0.05)',
-          fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2,
+          borderColor: selectedScenario ? normalizeScenarioColor(selectedScenario.color) : '#c8f060',
+          backgroundColor: selectedScenario ? 'transparent' : 'rgba(200,240,96,0.05)',
+          fill: !selectedScenario, tension: 0.35, pointRadius: 0, borderWidth: 2,
         },
         {
           label: 'Aportado',
