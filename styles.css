@@ -148,6 +148,37 @@ h1 em {
   color: var(--accent);
 }
 
+.control-value-input {
+  width: 132px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  text-align: right;
+  outline: none;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  caret-color: var(--accent);
+}
+
+.control-value-input:hover {
+  border-color: rgba(200,240,96,0.15);
+}
+
+.control-value-input:focus {
+  border-color: rgba(200,240,96,0.35);
+  background: rgba(200,240,96,0.08);
+}
+
+.control-value-input::selection {
+  background: rgba(200,240,96,0.25);
+  color: var(--text);
+}
+
+.control-value-input-percent {
+  width: 84px;
+}
+
 .tag-badge {
   font-family: 'DM Mono', monospace;
   font-size: 9px;

@@ -6,399 +6,7 @@
 <title>Simulador de Investimentos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0a0a0f;
-    --bg2: #111118;
-    --bg3: #18181f;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #f0efe8;
-    --text2: #8a8a94;
-    --text3: #55555f;
-    --accent: #c8f060;
-    --accent2: #a8d048;
-    --accent-dim: rgba(200,240,96,0.08);
-    --accent-dim2: rgba(200,240,96,0.15);
-    --green: #4ade80;
-    --green-dim: rgba(74,222,128,0.08);
-    --red: #f87171;
-    --gold: #fbbf24;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
-
-  /* Background grain */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
-  }
-
-  .wrap {
-    position: relative;
-    z-index: 1;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 24px 80px;
-  }
-
-  /* Header */
-  header {
-    padding: 56px 0 40px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 48px;
-  }
-
-  .header-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--accent);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .header-tag::before {
-    content: '';
-    display: inline-block;
-    width: 20px;
-    height: 1px;
-    background: var(--accent);
-  }
-
-  h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: clamp(32px, 5vw, 52px);
-    font-weight: 400;
-    line-height: 1.1;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-
-  h1 em {
-    font-style: italic;
-    color: var(--accent);
-  }
-
-  .header-sub {
-    margin-top: 12px;
-    font-size: 15px;
-    color: var(--text2);
-    font-weight: 300;
-  }
-
-  /* Layout */
-  .layout {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  @media (max-width: 720px) {
-    .layout { grid-template-columns: 1fr; }
-  }
-
-  /* Controls panel */
-  .panel {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    position: sticky;
-    top: 24px;
-  }
-
-  .panel-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin-bottom: 24px;
-  }
-
-  .control-group {
-    margin-bottom: 22px;
-  }
-
-  .control-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 8px;
-  }
-
-  .control-label span:first-child {
-    font-size: 13px;
-    color: var(--text2);
-    font-weight: 400;
-  }
-
-  .control-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--accent);
-  }
-
-  .tag-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: var(--accent-dim);
-    color: var(--accent);
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-left: 6px;
-  }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 2px;
-    background: var(--border2);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 0 0 0 rgba(200,240,96,0);
-  }
-
-  input[type=range]::-webkit-slider-thumb:hover {
-    transform: scale(1.3);
-    box-shadow: 0 0 0 6px rgba(200,240,96,0.15);
-  }
-
-  input[type=range]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    border: none;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 24px 0;
-  }
-
-  /* Right column */
-  .results { display: flex; flex-direction: column; gap: 20px; }
-
-  /* Cards grid */
-  .cards-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .cards-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-  }
-
-  .card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-    transition: border-color 0.2s;
-  }
-
-  .card:hover { border-color: var(--border2); }
-
-  .card.accent {
-    background: var(--accent-dim);
-    border-color: rgba(200,240,96,0.2);
-  }
-
-  .card-label {
-    font-size: 11px;
-    color: var(--text3);
-    font-weight: 400;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .card.accent .card-label { color: var(--accent2); }
-
-  .card-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--text);
-    line-height: 1.2;
-  }
-
-  .card.accent .card-value { color: var(--accent); }
-
-  .card-sub {
-    font-size: 11px;
-    color: var(--text3);
-    margin-top: 4px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .card.accent .card-sub { color: var(--accent2); opacity: 0.8; }
-
-  /* Section header */
-  .section-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .section-head h2 {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text3);
-    font-weight: 400;
-  }
-
-  .section-head::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* Chart container */
-  .chart-wrap {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px 20px 16px;
-  }
-
-  .chart-legend {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .chart-legend span {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text2);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .leg-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  .chart-inner {
-    position: relative;
-    width: 100%;
-    height: 220px;
-  }
-
-  /* Comparison table */
-  .compare-wrap {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  thead tr {
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border);
-  }
-
-  th {
-    padding: 12px 16px;
-    text-align: left;
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text3);
-  }
-
-  td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2);
-    font-size: 13px;
-  }
-
-  tr:last-child td { border-bottom: none; }
-
-  td.highlight {
-    font-family: 'DM Mono', monospace;
-    color: var(--accent);
-    font-weight: 500;
-  }
-
-  tr.current-row td { color: var(--text); }
-  tr.current-row td.highlight { color: var(--accent); }
-
-  /* Animate in */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .fade-in { animation: fadeUp 0.4s ease forwards; }
-
-  /* Responsive */
-  @media (max-width: 540px) {
-    .cards-2, .cards-3 { grid-template-columns: 1fr 1fr; }
-    .cards-3 .card:last-child { grid-column: span 2; }
-  }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap">
@@ -416,33 +24,33 @@
       <div class="control-group">
         <div class="control-label">
           <span>Capital inicial</span>
-          <span class="control-value" id="v-inicial">R$ 27.000</span>
+          <input class="control-value control-value-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 27.000">
         </div>
-        <input type="range" id="inicial" min="0" max="200000" step="1000" value="27000">
+        <input type="range" id="inicial" min="0" max="200000" step="100" value="10000">
       </div>
 
       <div class="control-group">
         <div class="control-label">
           <span>Aporte mensal</span>
-          <span class="control-value" id="v-aporte">R$ 4.000</span>
+          <input class="control-value control-value-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 4.000">
         </div>
-        <input type="range" id="aporte" min="500" max="20000" step="500" value="4000">
+        <input type="range" id="aporte" min="500" max="20000" step="100" value="100">
       </div>
 
       <div class="control-group">
         <div class="control-label">
           <span>Extra em julho <span class="tag-badge">anual</span></span>
-          <span class="control-value" id="v-julho">R$ 1.000</span>
+          <input class="control-value control-value-input" id="v-julho" type="text" inputmode="decimal" aria-label="Extra em julho" value="R$ 1.000">
         </div>
-        <input type="range" id="julho" min="0" max="20000" step="500" value="1000">
+        <input type="range" id="julho" min="0" max="20000" step="100" value="1000">
       </div>
 
       <div class="control-group">
         <div class="control-label">
           <span>Extra em dezembro <span class="tag-badge">anual</span></span>
-          <span class="control-value" id="v-dezembro">R$ 10.000</span>
+          <input class="control-value control-value-input" id="v-dezembro" type="text" inputmode="decimal" aria-label="Extra em dezembro" value="R$ 10.000">
         </div>
-        <input type="range" id="dezembro" min="0" max="50000" step="500" value="10000">
+        <input type="range" id="dezembro" min="0" max="50000" step="100" value="10000">
       </div>
 
       <hr class="divider">
@@ -450,17 +58,17 @@
       <div class="control-group">
         <div class="control-label">
           <span>Juros ao ano</span>
-          <span class="control-value" id="v-juros">12,0%</span>
+          <input class="control-value control-value-input control-value-input-percent" id="v-juros" type="text" inputmode="decimal" aria-label="Juros ao ano" value="12,0%">
         </div>
-        <input type="range" id="juros" min="1" max="30" step="0.5" value="12">
+        <input type="range" id="juros" min="1" max="30" step="0.01" value="12">
       </div>
 
       <div class="control-group" style="margin-bottom:0">
         <div class="control-label">
           <span>Meta</span>
-          <span class="control-value" id="v-meta">R$ 1.000.000</span>
+          <input class="control-value control-value-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 1.000.000">
         </div>
-        <input type="range" id="meta" min="100000" max="5000000" step="50000" value="1000000">
+        <input type="range" id="meta" min="100000" max="5000000" step="100" value="1000000">
       </div>
     </aside>
 
@@ -553,202 +161,6 @@
   </div>
 </div>
 
-<script>
-  function fmtFull(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
-  function fmt(v) {
-    if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(2).replace('.', ',') + ' M';
-    if (v >= 1000) return 'R$ ' + Math.round(v / 1000).toLocaleString('pt-BR') + ' mil';
-    return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
-  }
-
-  let chartInst;
-
-  function simular(inicial, aporte, julho, dezembro, taxaAnual, meta) {
-    const tm = Math.pow(1 + taxaAnual, 1 / 12) - 1;
-    let saldo = inicial, meses = 0, total = inicial;
-    const pat = [], inv = [], labels = [];
-    while (saldo < meta && meses < 600) {
-      meses++;
-      const m = ((meses - 1) % 12) + 1;
-      let extra = 0;
-      if (m === 7) extra += julho;
-      if (m === 12) extra += dezembro;
-      saldo = saldo * (1 + tm) + aporte + extra;
-      total += aporte + extra;
-      if (meses % 6 === 0 || meses === 1) {
-        const lbl = meses <= 12 ? meses + 'm' : Math.floor(meses / 12) + 'a' + (meses % 12 ? (meses % 12) + 'm' : '');
-        labels.push(lbl); pat.push(Math.round(saldo)); inv.push(Math.round(total));
-      }
-    }
-    return { meses, saldo, total, labels, pat, inv };
-  }
-
-  function simularSemExtras(inicial, aporte, taxaAnual, meta) {
-    const tm = Math.pow(1 + taxaAnual, 1 / 12) - 1;
-    let saldo = inicial, meses = 0;
-    const pat = [];
-    while (saldo < meta && meses < 600) {
-      meses++;
-      saldo = saldo * (1 + tm) + aporte;
-      if (meses % 6 === 0 || meses === 1) pat.push(Math.round(saldo));
-    }
-    return { meses, pat };
-  }
-
-  function mesesParaTexto(m) {
-    const a = Math.floor(m / 12), r = m % 12;
-    return a + ' anos' + (r ? ' e ' + r + ' meses' : '');
-  }
-
-  const SCENARIOS = [
-    { label: 'R$ 3k/mês + R$ 5k dez', aporte: 3000, julho: 1000, dezembro: 5000, taxa: 15 },
-    { label: 'R$ 4k/mês + R$ 5k dez', aporte: 4000, julho: 1000, dezembro: 5000, taxa: 15 },
-    { label: 'R$ 4k/mês + R$ 10k dez', aporte: 4000, julho: 1000, dezembro: 10000, taxa: 15 },
-    { label: 'R$ 4k/mês + R$ 10k dez', aporte: 4000, julho: 1000, dezembro: 10000, taxa: 12 },
-  ];
-
-  function buildTable(currentKey) {
-    const tbody = document.getElementById('compare-body');
-    tbody.innerHTML = '';
-    const inicial = 27000, meta = 1000000;
-    SCENARIOS.forEach(s => {
-      const r = simular(inicial, s.aporte, s.julho, s.dezembro, s.taxa / 100, meta);
-      const tm = Math.pow(1 + s.taxa / 100, 1 / 12) - 1;
-      const rendMes = r.saldo * tm;
-      const key = s.label + s.taxa;
-      const tr = document.createElement('tr');
-      if (key === currentKey) tr.className = 'current-row';
-      tr.innerHTML = `
-        <td>${s.label}</td>
-        <td>${s.taxa}% a.a.</td>
-        <td class="highlight">${mesesParaTexto(r.meses)}</td>
-        <td class="highlight">${fmt(rendMes)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function calcular() {
-    const inicial   = +document.getElementById('inicial').value;
-    const aporte    = +document.getElementById('aporte').value;
-    const julho     = +document.getElementById('julho').value;
-    const dezembro  = +document.getElementById('dezembro').value;
-    const taxa      = +document.getElementById('juros').value;
-    const taxaAnual = taxa / 100;
-    const meta      = +document.getElementById('meta').value;
-
-    // Update labels
-    document.getElementById('v-inicial').textContent  = fmtFull(inicial);
-    document.getElementById('v-aporte').textContent   = fmtFull(aporte);
-    document.getElementById('v-julho').textContent    = fmtFull(julho);
-    document.getElementById('v-dezembro').textContent = fmtFull(dezembro);
-    document.getElementById('v-juros').textContent    = taxa.toFixed(1).replace('.', ',') + '%';
-    document.getElementById('v-meta').textContent     = fmtFull(meta);
-
-    const com = simular(inicial, aporte, julho, dezembro, taxaAnual, meta);
-    const sem = simularSemExtras(inicial, aporte, taxaAnual, meta);
-
-    const anosC = Math.floor(com.meses / 12), mC = com.meses % 12;
-    document.getElementById('c-tempo').textContent = anosC + ' anos' + (mC ? ' e ' + mC + ' meses' : '');
-    document.getElementById('c-tempo-sub').textContent = com.meses + ' meses no total';
-
-    document.getElementById('c-pat').textContent = fmt(com.saldo);
-    document.getElementById('c-pat-sub').textContent = fmtFull(Math.round(com.saldo));
-
-    document.getElementById('c-inv').textContent = fmt(com.total);
-    document.getElementById('c-inv-sub').textContent = fmtFull(Math.round(com.total));
-
-    const ganho = com.saldo - com.total;
-    document.getElementById('c-juros').textContent = fmt(ganho);
-    document.getElementById('c-juros-sub').textContent = Math.round(ganho / com.saldo * 100) + '% do patrimônio';
-
-    const tm = Math.pow(1 + taxaAnual, 1 / 12) - 1;
-    const rMes = com.saldo * tm;
-    const rAno = com.saldo * taxaAnual;
-    const rDia = rAno / 365;
-
-    document.getElementById('r-mes').textContent = fmt(rMes);
-    document.getElementById('r-mes-sub').textContent = fmtFull(Math.round(rMes)) + '/mês';
-    document.getElementById('r-ano').textContent = fmt(rAno);
-    document.getElementById('r-ano-sub').textContent = fmtFull(Math.round(rAno)) + '/ano';
-    document.getElementById('r-dia').textContent = fmt(rDia);
-    document.getElementById('r-dia-sub').textContent = fmtFull(Math.round(rDia)) + '/dia';
-
-    const semAligned = com.labels.map((_, i) => sem.pat[i] ?? null);
-
-    if (chartInst) chartInst.destroy();
-    chartInst = new Chart(document.getElementById('chart'), {
-      type: 'line',
-      data: {
-        labels: com.labels,
-        datasets: [
-          {
-            label: 'Com extras',
-            data: com.pat,
-            borderColor: '#c8f060',
-            backgroundColor: 'rgba(200,240,96,0.05)',
-            fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2,
-          },
-          {
-            label: 'Sem extras',
-            data: semAligned,
-            borderColor: '#7c6fdb',
-            backgroundColor: 'transparent',
-            fill: false, tension: 0.35, pointRadius: 0, borderWidth: 1.5,
-            borderDash: [5, 4],
-          },
-          {
-            label: 'Aportado',
-            data: com.inv,
-            borderColor: '#3a3a55',
-            backgroundColor: 'transparent',
-            fill: false, tension: 0, pointRadius: 0, borderWidth: 1,
-            borderDash: [3, 3],
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#18181f',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            titleColor: '#8a8a94',
-            bodyColor: '#f0efe8',
-            titleFont: { family: 'DM Mono', size: 11 },
-            bodyFont: { family: 'DM Mono', size: 12 },
-            callbacks: { label: ctx => ctx.dataset.label + ': R$ ' + (ctx.raw || 0).toLocaleString('pt-BR') }
-          }
-        },
-        scales: {
-          y: {
-            ticks: {
-              callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000) + 'k' : v,
-              font: { family: 'DM Mono', size: 10 },
-              color: '#55555f'
-            },
-            grid: { color: 'rgba(255,255,255,0.04)' },
-            border: { color: 'transparent' }
-          },
-          x: {
-            ticks: { font: { family: 'DM Mono', size: 10 }, color: '#55555f', maxTicksLimit: 10 },
-            grid: { display: false },
-            border: { color: 'transparent' }
-          }
-        }
-      }
-    });
-
-    buildTable(null);
-  }
-
-  ['inicial', 'aporte', 'julho', 'dezembro', 'juros', 'meta'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calcular);
-  });
-
-  calcular();
-</script>
+<script src="script.js"></script>
 </body>
 </html>

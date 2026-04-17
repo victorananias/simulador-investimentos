@@ -1,11 +1,206 @@
-function fmtFull(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
-function fmt(v) {
-  if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(2).replace('.', ',') + ' M';
-  if (v >= 1000) return 'R$ ' + Math.round(v / 1000).toLocaleString('pt-BR') + ' mil';
-  return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+function hasFraction(value) {
+  return Math.abs(value % 1) > 0.000001;
 }
 
+function fmtFull(v) {
+  return 'R$ ' + v.toLocaleString('pt-BR', {
+    minimumFractionDigits: hasFraction(v) ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+}
+function fmt(v) {
+  if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(2).replace('.', ',') + ' M';
+  if (v >= 1000) return 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' mil';
+  return fmtFull(v);
+}
+
+const CONTROL_CONFIG = {
+  inicial: { displayId: 'v-inicial', kind: 'currency' },
+  aporte: { displayId: 'v-aporte', kind: 'currency' },
+  julho: { displayId: 'v-julho', kind: 'currency' },
+  dezembro: { displayId: 'v-dezembro', kind: 'currency' },
+  juros: { displayId: 'v-juros', kind: 'percent' },
+  meta: { displayId: 'v-meta', kind: 'currency' },
+};
+
+const CONTROL_IDS = Object.keys(CONTROL_CONFIG);
+const STORAGE_KEY = 'simulador-investimentos:parametros';
+
 let chartInst;
+
+function saveControlValues() {
+  const values = CONTROL_IDS.reduce((accumulator, controlId) => {
+    accumulator[controlId] = document.getElementById(controlId).value;
+    return accumulator;
+  }, {});
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+  } catch {
+  }
+}
+
+function restoreControlValues() {
+  try {
+    const savedValues = localStorage.getItem(STORAGE_KEY);
+    if (!savedValues) return;
+
+    const parsedValues = JSON.parse(savedValues);
+    CONTROL_IDS.forEach(controlId => {
+      const savedValue = parsedValues?.[controlId];
+      if (savedValue === undefined || savedValue === null || savedValue === '') return;
+
+      const normalized = clampRangeValue(controlId, Number(savedValue), { skipStepSnap: true });
+      if (!Number.isFinite(normalized)) return;
+      document.getElementById(controlId).value = normalized;
+    });
+  } catch {
+  }
+}
+
+function countStepDecimals(step) {
+  const stepText = String(step);
+  const parts = stepText.split('.');
+  return parts[1] ? parts[1].length : 0;
+}
+
+function normalizeNumberInput(value) {
+  const sanitized = value.trim().replace(/[^\d,.-]/g, '');
+  if (!sanitized || sanitized === '-' || sanitized === ',' || sanitized === '.') return null;
+
+  const lastComma = sanitized.lastIndexOf(',');
+  const lastDot = sanitized.lastIndexOf('.');
+  const separatorIndex = Math.max(lastComma, lastDot);
+
+  if (separatorIndex === -1) {
+    const integerOnly = sanitized.replace(/[.,]/g, '');
+    const parsedInteger = Number(integerOnly);
+    return Number.isFinite(parsedInteger) ? parsedInteger : null;
+  }
+
+  const integerPart = sanitized.slice(0, separatorIndex).replace(/[.,]/g, '');
+  const decimalPart = sanitized.slice(separatorIndex + 1).replace(/[.,]/g, '');
+  const normalized = `${integerPart || '0'}.${decimalPart}`;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseControlValue(controlId, value) {
+  const { kind } = CONTROL_CONFIG[controlId];
+
+  if (kind === 'currency') {
+    return normalizeNumberInput(value);
+  }
+
+  return normalizeNumberInput(value);
+}
+
+function formatControlValue(controlId, value) {
+  const { kind } = CONTROL_CONFIG[controlId];
+  if (kind === 'percent') return value.toFixed(1).replace('.', ',') + '%';
+  return fmtFull(value);
+}
+
+function formatEditableValue(controlId, value) {
+  const { kind } = CONTROL_CONFIG[controlId];
+  if (kind === 'percent') return value.toFixed(1).replace('.', ',');
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: hasFraction(value) ? 2 : 0,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+  });
+}
+
+function isCurrencyControl(controlId) {
+  return CONTROL_CONFIG[controlId].kind === 'currency';
+}
+
+function getDisplayInput(controlId) {
+  return document.getElementById(CONTROL_CONFIG[controlId].displayId);
+}
+
+function clampRangeValue(controlId, value, options = {}) {
+  const range = document.getElementById(controlId);
+  const min = Number(range.min);
+  const max = Number(range.max);
+  const step = Number(range.step || 1);
+  const decimals = countStepDecimals(step);
+  const clamped = Math.min(max, Math.max(min, value));
+
+  if (options.skipStepSnap) {
+    return Number(clamped.toFixed(decimals));
+  }
+
+  const snapped = Math.round((clamped - min) / step) * step + min;
+  return Number(snapped.toFixed(decimals));
+}
+
+function syncDisplayValues() {
+  CONTROL_IDS.forEach(controlId => {
+    const range = document.getElementById(controlId);
+    const display = getDisplayInput(controlId);
+    if (document.activeElement === display) return;
+    display.value = formatControlValue(controlId, Number(range.value));
+  });
+}
+
+function applyTypedValue(controlId, rawValue, options = {}) {
+  const parsed = parseControlValue(controlId, rawValue);
+  if (parsed === null) return false;
+
+  const range = document.getElementById(controlId);
+  const normalized = clampRangeValue(controlId, parsed, { skipStepSnap: true });
+  range.value = normalized;
+
+  if (options.recalculate !== false) calcular();
+  return true;
+}
+
+function normalizeSliderControlValue(controlId) {
+  if (!isCurrencyControl(controlId)) return;
+
+  const range = document.getElementById(controlId);
+  const normalized = clampRangeValue(controlId, Number(range.value));
+  range.value = normalized;
+}
+
+function setupEditableControls() {
+  CONTROL_IDS.forEach(controlId => {
+    const display = getDisplayInput(controlId);
+    const range = document.getElementById(controlId);
+
+    display.addEventListener('focus', () => {
+      display.dataset.previousValue = range.value;
+      display.value = formatEditableValue(controlId, Number(range.value));
+      display.select();
+    });
+
+    display.addEventListener('input', () => {
+      applyTypedValue(controlId, display.value);
+    });
+
+    display.addEventListener('blur', () => {
+      if (!applyTypedValue(controlId, display.value)) {
+        range.value = display.dataset.previousValue || range.value;
+        calcular();
+      }
+      display.value = formatControlValue(controlId, Number(range.value));
+    });
+
+    display.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        display.blur();
+      }
+
+      if (event.key === 'Escape') {
+        range.value = display.dataset.previousValue || range.value;
+        display.value = formatControlValue(controlId, Number(range.value));
+        calcular();
+        display.blur();
+      }
+    });
+  });
+}
 
 function simular(inicial, aporte, julho, dezembro, taxaAnual, meta) {
   const tm = Math.pow(1 + taxaAnual, 1 / 12) - 1;
@@ -81,12 +276,8 @@ function calcular() {
   const taxaAnual = taxa / 100;
   const meta = +document.getElementById('meta').value;
 
-  document.getElementById('v-inicial').textContent = fmtFull(inicial);
-  document.getElementById('v-aporte').textContent = fmtFull(aporte);
-  document.getElementById('v-julho').textContent = fmtFull(julho);
-  document.getElementById('v-dezembro').textContent = fmtFull(dezembro);
-  document.getElementById('v-juros').textContent = taxa.toFixed(1).replace('.', ',') + '%';
-  document.getElementById('v-meta').textContent = fmtFull(meta);
+  saveControlValues();
+  syncDisplayValues();
 
   const com = simular(inicial, aporte, julho, dezembro, taxaAnual, meta);
   const sem = simularSemExtras(inicial, aporte, taxaAnual, meta);
@@ -187,8 +378,13 @@ function calcular() {
   buildTable(null);
 }
 
-['inicial', 'aporte', 'julho', 'dezembro', 'juros', 'meta'].forEach(id => {
-  document.getElementById(id).addEventListener('input', calcular);
+CONTROL_IDS.forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    normalizeSliderControlValue(id);
+    calcular();
+  });
 });
 
+setupEditableControls();
+restoreControlValues();
 calcular();
