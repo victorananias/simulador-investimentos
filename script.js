@@ -834,3 +834,49 @@ renderExtrasList();
 setupExtraControls();
 setupScenarioControls();
 calcular();
+
+(function setupTheme() {
+  const THEME_KEY = 'simulador-investimentos:theme';
+  const html = document.documentElement;
+  const toggleBtn = document.getElementById('settings-toggle');
+  const panel = document.getElementById('settings-panel');
+  const themeBtn = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  const themeLabel = document.getElementById('theme-label');
+
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      html.setAttribute('data-theme', 'light');
+      themeIcon.textContent = '🌙';
+      themeLabel.textContent = 'Tema escuro';
+    } else {
+      html.removeAttribute('data-theme');
+      themeIcon.textContent = '☀️';
+      themeLabel.textContent = 'Tema claro';
+    }
+  }
+
+  const saved = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(saved);
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = panel.hidden;
+    panel.hidden = !isHidden;
+    toggleBtn.setAttribute('aria-expanded', String(isHidden));
+  });
+
+  themeBtn.addEventListener('click', () => {
+    const current = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('settings-fab').contains(e.target)) {
+      panel.hidden = true;
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();

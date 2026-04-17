@@ -7,8 +7,8 @@
   --border: rgba(255,255,255,0.07);
   --border2: rgba(255,255,255,0.12);
   --text: #f0efe8;
-  --text2: #8a8a94;
-  --text3: #55555f;
+  --text2: #b0b0bc;
+  --text3: #7a7a88;
   --accent: #c8f060;
   --accent2: #a8d048;
   --accent-dim: rgba(200,240,96,0.08);
@@ -17,6 +17,25 @@
   --green-dim: rgba(74,222,128,0.08);
   --red: #f87171;
   --gold: #fbbf24;
+}
+
+[data-theme="light"] {
+  --bg: #f4f4f0;
+  --bg2: #eaeae4;
+  --bg3: #e0e0d8;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1a1a;
+  --text2: #444440;
+  --text3: #777770;
+  --accent: #2d6a00;
+  --accent2: #1f4d00;
+  --accent-dim: rgba(45,106,0,0.08);
+  --accent-dim2: rgba(45,106,0,0.13);
+  --green: #1a6b3a;
+  --green-dim: rgba(26,107,58,0.08);
+  --red: #b02020;
+  --gold: #8a6200;
 }
 
 html { scroll-behavior: smooth; }
@@ -483,8 +502,8 @@ input[type=range]::-moz-range-thumb {
 }
 
 .card {
-  background: #181823;
-  border: 1px solid rgba(255,255,255,0.14);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
   border-radius: 12px;
   padding: 15px 16px;
   transition: border-color 0.2s;
@@ -493,13 +512,13 @@ input[type=range]::-moz-range-thumb {
 .card:hover { border-color: var(--border2); }
 
 .card.accent {
-  background: rgba(200,240,96,0.13);
+  background: var(--accent-dim2);
   border-color: rgba(200,240,96,0.34);
 }
 
 .card-label {
   font-size: 11px;
-  color: #8f8fa0;
+  color: var(--text2);
   font-weight: 400;
   margin-bottom: 4px;
   text-transform: uppercase;
@@ -520,7 +539,7 @@ input[type=range]::-moz-range-thumb {
 
 .card-sub {
   font-size: 11px;
-  color: #7a7a88;
+  color: var(--text3);
   margin-top: 2px;
   font-family: 'DM Mono', monospace;
 }
@@ -637,12 +656,12 @@ tr.current-row td.highlight { color: var(--accent); }
 
 tr.selected-row td { color: var(--text); }
 tr.selected-row td.highlight { color: var(--accent); }
-tr.selected-row { background: rgba(200,240,96,0.04); }
+tr.selected-row { background: var(--accent-dim); }
 
 .scenario-select-btn {
-  border: 1px solid rgba(200,240,96,0.3);
+  border: 1px solid var(--accent-dim2);
   border-radius: 999px;
-  background: rgba(200,240,96,0.06);
+  background: var(--accent-dim);
   color: var(--accent);
   padding: 5px 10px;
   font-family: 'DM Mono', monospace;
@@ -652,13 +671,14 @@ tr.selected-row { background: rgba(200,240,96,0.04); }
   transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 .scenario-select-btn:hover {
-  border-color: rgba(200,240,96,0.6);
-  background: rgba(200,240,96,0.12);
+  border-color: var(--accent2);
+  background: var(--accent-dim2);
 }
 .scenario-select-btn--active {
-  border-color: rgba(200,240,96,0.7);
-  background: rgba(200,240,96,0.16);
-  color: #c8f060;
+  border-color: var(--accent2);
+  background: var(--accent-dim2);
+  color: var(--accent);
+  font-weight: 500;
 }
 
 @keyframes fadeUp {
@@ -667,6 +687,77 @@ tr.selected-row { background: rgba(200,240,96,0.04); }
 }
 
 .fade-in { animation: fadeUp 0.4s ease forwards; }
+
+/* Settings FAB */
+.settings-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.settings-fab-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.settings-fab-btn:hover {
+  background: var(--bg2);
+  color: var(--text);
+  transform: rotate(30deg);
+}
+
+.settings-panel {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  animation: fadeUp 0.18s ease forwards;
+}
+
+.settings-panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
+.settings-theme-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.settings-theme-btn:hover {
+  background: var(--accent-dim2);
+  border-color: var(--accent2);
+}
 
 @media (max-width: 540px) {
   .scenario-form {
