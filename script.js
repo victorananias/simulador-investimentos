@@ -49,6 +49,14 @@ function normalizeScenarioColor(color, fallback = '#4ade80') {
   return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : fallback;
 }
 
+function hexToRgba(hex, alpha) {
+  const normalized = normalizeScenarioColor(hex);
+  const r = Number.parseInt(normalized.slice(1, 3), 16);
+  const g = Number.parseInt(normalized.slice(3, 5), 16);
+  const b = Number.parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function createDefaultExtra() {
   return {
     id: crypto.randomUUID(),
@@ -155,6 +163,26 @@ function buildChartLabels(primary, scenarioSeries) {
   return longest.labels;
 }
 
+function getCssVarValue(name, fallback = '') {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+function getChartThemePalette() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  return {
+    primaryLine: getCssVarValue('--accent', '#c8f060'),
+    primaryFill: isLight ? 'rgba(45,106,0,0.10)' : 'rgba(200,240,96,0.05)',
+    aportadoLine: isLight ? '#4b4f69' : '#8e90b5',
+    axisText: isLight ? '#4d4f5f' : '#b8bacd',
+    yGrid: isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)',
+    tooltipBg: isLight ? '#f0f0ea' : '#20202a',
+    tooltipBorder: isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)',
+    tooltipTitle: isLight ? '#2e2f36' : '#c0c1cf',
+    tooltipBody: isLight ? '#101015' : '#f7f7f2',
+  };
+}
+
 function setupScenarioControls() {
   const saveButton = document.getElementById('save-scenario');
   const nameInput = document.getElementById('scenario-name');
@@ -162,7 +190,17 @@ function setupScenarioControls() {
 
   const saveScenario = () => {
     const controlSnapshot = getControlSnapshot();
-    savedScenarios.push(collectCurrentScenario(controlSnapshot));
+    const newScenario = collectCurrentScenario(controlSnapshot);
+    const existingIndex = savedScenarios.findIndex(
+      item => item.name.trim().toLowerCase() === newScenario.name.trim().toLowerCase()
+    );
+    if (existingIndex !== -1) {
+      newScenario.id = savedScenarios[existingIndex].id;
+      if (selectedScenarioId === savedScenarios[existingIndex].id) selectedScenarioId = newScenario.id;
+      savedScenarios[existingIndex] = newScenario;
+    } else {
+      savedScenarios.push(newScenario);
+    }
     nameInput.value = '';
     CONTROL_IDS.forEach(controlId => {
       const range = document.getElementById(controlId);
@@ -236,8 +274,25 @@ function setupScenarioControls() {
     if (!selectButton) return;
 
     const scenarioId = selectButton.dataset.scenarioSelect;
-    selectedScenarioId = selectedScenarioId === scenarioId ? null : scenarioId;
+    const isDeselect = selectedScenarioId === scenarioId;
+    selectedScenarioId = isDeselect ? null : scenarioId;
+
+    if (!isDeselect) {
+      const scenario = savedScenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        document.getElementById('inicial').value = clampRangeValue('inicial', scenario.inicial, { skipStepSnap: true });
+        document.getElementById('aporte').value = clampRangeValue('aporte', scenario.aporte, { skipStepSnap: true });
+        document.getElementById('juros').value = clampRangeValue('juros', scenario.taxa, { skipStepSnap: true });
+        document.getElementById('meta').value = clampRangeValue('meta', scenario.meta, { skipStepSnap: true });
+        extrasState = scenario.extras.map(sanitizeExtraDraft);
+        renderExtrasList();
+        document.getElementById('scenario-name').value = scenario.name;
+        document.getElementById('scenario-color').value = normalizeScenarioColor(scenario.color);
+      }
+    }
+
     calcular();
+    syncDisplayValues();
   });
 }
 
@@ -322,6 +377,7 @@ function saveControlValues() {
       controls: values,
       extras: extrasState,
       scenarios: savedScenarios,
+      selectedScenarioId,
     }));
   } catch {
   }
@@ -350,9 +406,17 @@ function restoreControlValues() {
     savedScenarios = Array.isArray(parsedValues?.scenarios)
       ? parsedValues.scenarios.map((scenario, index) => sanitizeScenarioDraft(scenario, index))
       : [];
+
+    const restoredSelectedId = typeof parsedValues?.selectedScenarioId === 'string'
+      ? parsedValues.selectedScenarioId
+      : null;
+    selectedScenarioId = savedScenarios.some(scenario => scenario.id === restoredSelectedId)
+      ? restoredSelectedId
+      : null;
   } catch {
     extrasState = [];
     savedScenarios = [];
+    selectedScenarioId = null;
   }
 }
 
@@ -622,7 +686,10 @@ function simular(inicial, aporte, taxaAnual, meta, extras = []) {
 
     saldo = saldo * (1 + tm) + aporte + aporteExtra;
     total += aporte + aporteExtra;
-    if (meses % 6 === 0 || meses === 1) {
+    const reachedLimit = meses === MAX_SIMULATION_MONTHS;
+    const reachedTarget = saldo >= meta;
+    const shouldPlotPoint = meses % 6 === 0 || meses === 1 || reachedTarget || reachedLimit;
+    if (shouldPlotPoint) {
       const lbl = meses <= 12 ? meses + 'm' : Math.floor(meses / 12) + 'a' + (meses % 12 ? (meses % 12) + 'm' : '');
       labels.push(lbl); pat.push(Math.round(saldo)); inv.push(Math.round(total));
     }
@@ -702,8 +769,7 @@ function calcular() {
         selectedScenario.extras.map(sanitizeExtraDraft).map(e => ({ month: Number(e.month), amount: normalizeNumberInput(e.amount) || 0, recurrence: e.recurrence, year: e.recurrence === 'specific' ? Number(e.year) : null })).filter(e => e.amount > 0)
       )
     : simular(inicial, aporte, taxaAnual, meta, extras);
-  const visibleScenarios = savedScenarios.filter(scenario => scenario.visible !== false);
-  const savedScenarioSeries = visibleScenarios.map(scenario => {
+  const allScenarioSeries = savedScenarios.map(scenario => {
     const scenarioExtras = scenario.extras
       .map(sanitizeExtraDraft)
       .map(extra => ({
@@ -721,7 +787,9 @@ function calcular() {
     };
   });
 
-  const chartLabels = buildChartLabels(com, savedScenarioSeries.map(item => item.result));
+  const savedScenarioSeries = allScenarioSeries.filter(item => item.scenario.visible !== false);
+
+  const chartLabels = buildChartLabels({ labels: [] }, savedScenarioSeries.map(item => item.result));
 
   const anosC = Math.floor(com.meses / 12), mC = com.meses % 12;
   document.getElementById('c-tempo').textContent = anosC + ' anos' + (mC ? ' e ' + mC + ' meses' : '');
@@ -750,50 +818,40 @@ function calcular() {
   document.getElementById('r-dia').textContent = fmt(rDia);
   document.getElementById('r-dia-sub').textContent = fmtFull(Math.round(rDia)) + '/dia';
 
+  const chartTheme = getChartThemePalette();
+
   if (chartInst) chartInst.destroy();
   chartInst = new Chart(document.getElementById('chart'), {
     type: 'line',
     data: {
       labels: chartLabels,
-      datasets: [
-        {
-          label: selectedScenario ? selectedScenario.name : 'Patrimônio projetado',
-          data: alignSeriesData(com.pat, chartLabels.length),
-          borderColor: selectedScenario ? normalizeScenarioColor(selectedScenario.color) : '#c8f060',
-          backgroundColor: selectedScenario ? 'transparent' : 'rgba(200,240,96,0.05)',
-          fill: !selectedScenario, tension: 0.35, pointRadius: 0, borderWidth: 2,
-        },
-        {
-          label: 'Aportado',
-          data: alignSeriesData(com.inv, chartLabels.length),
-          borderColor: '#3a3a55',
-          backgroundColor: 'transparent',
-          fill: false, tension: 0, pointRadius: 0, borderWidth: 1,
-          borderDash: [3, 3],
-        },
-        ...savedScenarioSeries.map(({ scenario, result }) => ({
+      datasets: savedScenarioSeries.map(({ scenario, result }) => {
+        const isSelectedSeries = scenario.id === selectedScenarioId;
+        const seriesColor = normalizeScenarioColor(scenario.color);
+
+        return {
           label: scenario.name,
           data: alignSeriesData(result.pat, chartLabels.length),
-          borderColor: normalizeScenarioColor(scenario.color),
-          backgroundColor: 'transparent',
-          fill: false,
+          borderColor: seriesColor,
+          backgroundColor: isSelectedSeries ? hexToRgba(seriesColor, 0.16) : 'transparent',
+          fill: isSelectedSeries,
           tension: 0.35,
           pointRadius: 0,
-          borderWidth: 1.6,
-          borderDash: [6, 4],
-        }))
-      ]
+          borderWidth: isSelectedSeries ? 2.2 : 1.6,
+          borderDash: isSelectedSeries ? [] : [6, 4],
+        };
+      })
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#18181f',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: chartTheme.tooltipBg,
+          borderColor: chartTheme.tooltipBorder,
           borderWidth: 1,
-          titleColor: '#8a8a94',
-          bodyColor: '#f0efe8',
+          titleColor: chartTheme.tooltipTitle,
+          bodyColor: chartTheme.tooltipBody,
           titleFont: { family: 'DM Mono', size: 11 },
           bodyFont: { family: 'DM Mono', size: 12 },
           callbacks: { label: ctx => ctx.dataset.label + ': R$ ' + (ctx.raw || 0).toLocaleString('pt-BR') }
@@ -804,13 +862,13 @@ function calcular() {
           ticks: {
             callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000) + 'k' : v,
             font: { family: 'DM Mono', size: 10 },
-            color: '#55555f'
+            color: chartTheme.axisText
           },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          grid: { color: chartTheme.yGrid },
           border: { color: 'transparent' }
         },
         x: {
-          ticks: { font: { family: 'DM Mono', size: 10 }, color: '#55555f', maxTicksLimit: 10 },
+          ticks: { font: { family: 'DM Mono', size: 10 }, color: chartTheme.axisText, maxTicksLimit: 10 },
           grid: { display: false },
           border: { color: 'transparent' }
         }
@@ -858,6 +916,7 @@ calcular();
 
   const saved = localStorage.getItem(THEME_KEY) || 'dark';
   applyTheme(saved);
+  calcular();
 
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -871,6 +930,7 @@ calcular();
     const next = current === 'light' ? 'dark' : 'light';
     applyTheme(next);
     localStorage.setItem(THEME_KEY, next);
+    calcular();
   });
 
   document.addEventListener('click', (e) => {
