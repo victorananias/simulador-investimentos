@@ -13,12 +13,11 @@
   <header>
     <div class="header-tag">Planejamento financeiro</div>
     <h1>Simulador de<br><em>Investimentos</em></h1>
-    <p class="header-sub">Juros compostos com aportes mensais e sazonais</p>
+    <p class="header-sub">Juros compostos com aportes mensais e extras programados</p>
   </header>
 
   <div class="layout">
-    <!-- Controls -->
-    <aside class="panel">
+    <section class="panel">
       <div class="panel-title">Parâmetros</div>
 
       <div class="control-group">
@@ -26,7 +25,7 @@
           <span>Capital inicial</span>
           <input class="control-value control-value-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 27.000">
         </div>
-        <input type="range" id="inicial" min="0" max="200000" step="100" value="10000">
+        <input type="range" id="inicial" min="0" max="200000" step="0.01" value="10000">
       </div>
 
       <div class="control-group">
@@ -34,23 +33,7 @@
           <span>Aporte mensal</span>
           <input class="control-value control-value-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 4.000">
         </div>
-        <input type="range" id="aporte" min="500" max="20000" step="100" value="100">
-      </div>
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Extra em julho <span class="tag-badge">anual</span></span>
-          <input class="control-value control-value-input" id="v-julho" type="text" inputmode="decimal" aria-label="Extra em julho" value="R$ 1.000">
-        </div>
-        <input type="range" id="julho" min="0" max="20000" step="100" value="1000">
-      </div>
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Extra em dezembro <span class="tag-badge">anual</span></span>
-          <input class="control-value control-value-input" id="v-dezembro" type="text" inputmode="decimal" aria-label="Extra em dezembro" value="R$ 10.000">
-        </div>
-        <input type="range" id="dezembro" min="0" max="50000" step="100" value="10000">
+        <input type="range" id="aporte" min="500" max="20000" step="0.01" value="100">
       </div>
 
       <hr class="divider">
@@ -68,9 +51,57 @@
           <span>Meta</span>
           <input class="control-value control-value-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 1.000.000">
         </div>
-        <input type="range" id="meta" min="100000" max="5000000" step="100" value="1000000">
+        <input type="range" id="meta" min="100000" max="5000000" step="0.01" value="1000000">
       </div>
-    </aside>
+
+    </section>
+
+    <section class="panel extra-section" aria-labelledby="extra-title">
+      <div class="panel-title extra-title-row">
+        <span id="extra-title">Aportes extras</span>
+        <button type="button" class="extra-add-btn" id="add-extra">Adicionar</button>
+      </div>
+      <p class="extra-help">Escolha um mês, o valor do aporte e se ele se repete todo ano ou apenas em um ano específico da simulação.</p>
+      <div class="extra-list" id="extra-list"></div>
+    </section>
+
+    <section class="panel scenario-section" aria-labelledby="scenario-title">
+      <div class="panel-title" id="scenario-title">Salvar cenário</div>
+      <div class="scenario-form">
+        <label class="scenario-field">
+          <span class="extra-field-label">Nome</span>
+          <input class="extra-input" id="scenario-name" type="text" placeholder="Ex.: Conservador 12%">
+        </label>
+        <label class="scenario-field">
+          <span class="extra-field-label">Cor no gráfico</span>
+          <input class="scenario-color" id="scenario-color" type="color" value="#4ade80" aria-label="Cor do cenário">
+        </label>
+        <button type="button" class="scenario-save-btn" id="save-scenario">Salvar cenário</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="saved-scenarios-title">
+      <div class="section-head"><h2 id="saved-scenarios-title">Comparativo de cenários</h2></div>
+      <div class="compare-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Exibir</th>
+              <th>Cor</th>
+              <th>Inicial</th>
+              <th>Aporte</th>
+              <th>Taxa</th>
+              <th>Meta</th>
+              <th>Prazo</th>
+              <th>Rend./mês</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- Results -->
     <main class="results">
@@ -129,31 +160,12 @@
         <div class="section-head"><h2>Evolução do patrimônio</h2></div>
         <div class="chart-wrap">
           <div class="chart-legend">
-            <span><span class="leg-dot" style="background:#c8f060"></span>Com extras sazonais</span>
-            <span><span class="leg-dot" style="background:#7c6fdb; border: 1px dashed #7c6fdb"></span>Sem extras</span>
+            <span><span class="leg-dot" style="background:#c8f060"></span>Patrimônio projetado</span>
             <span><span class="leg-dot" style="background:#3a3a44"></span>Total aportado</span>
           </div>
           <div class="chart-inner">
             <canvas id="chart" role="img" aria-label="Evolução do patrimônio ao longo do tempo"></canvas>
           </div>
-        </div>
-      </div>
-
-      <!-- Tabela comparativa -->
-      <div>
-        <div class="section-head"><h2>Comparativo de cenários</h2></div>
-        <div class="compare-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Cenário</th>
-                <th>Taxa</th>
-                <th>Prazo</th>
-                <th>Rend./mês</th>
-              </tr>
-            </thead>
-            <tbody id="compare-body"></tbody>
-          </table>
         </div>
       </div>
 
