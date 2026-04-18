@@ -365,6 +365,32 @@ h1 em {
   border-color: rgba(200,240,96,0.55);
 }
 
+.scenario-transfer-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.scenario-transfer-btn {
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text2);
+  height: 34px;
+  padding: 0 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+
+.scenario-transfer-btn:hover {
+  border-color: rgba(200,240,96,0.35);
+  color: var(--accent);
+  background: rgba(200,240,96,0.06);
+}
+
 .scenario-dot {
   width: 10px;
   height: 10px;
@@ -763,6 +789,14 @@ tr.selected-row { background: var(--accent-dim); }
   .scenario-form {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .scenario-transfer-actions {
+    justify-content: stretch;
+  }
+
+  .scenario-transfer-btn {
+    flex: 1;
   }
 
   .scenario-save-btn {

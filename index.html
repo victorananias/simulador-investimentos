@@ -82,6 +82,11 @@
 
     <section class="panel" aria-labelledby="saved-scenarios-title">
       <div class="section-head"><h2 id="saved-scenarios-title">Comparativo de cenários</h2></div>
+      <div class="scenario-transfer-actions" aria-label="Importação e exportação de cenários">
+        <button type="button" class="scenario-transfer-btn" id="export-scenarios">Exportar JSON</button>
+        <button type="button" class="scenario-transfer-btn" id="import-scenarios">Importar JSON</button>
+        <input type="file" id="import-scenarios-file" accept="application/json,.json" hidden>
+      </div>
       <div class="compare-wrap">
         <table>
           <thead>

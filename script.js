@@ -24,6 +24,7 @@ const CONTROL_CONFIG = {
 const CONTROL_IDS = Object.keys(CONTROL_CONFIG);
 const STORAGE_KEY = 'simulador-investimentos:parametros';
 const MAX_SIMULATION_MONTHS = 600;
+const SCENARIO_EXPORT_VERSION = 1;
 const EXTRA_MONTHS = [
   'Janeiro',
   'Fevereiro',
@@ -293,6 +294,112 @@ function setupScenarioControls() {
 
     calcular();
     syncDisplayValues();
+  });
+}
+
+function buildScenarioExportPayload() {
+  return {
+    app: 'simulador-investimentos',
+    type: 'scenarios',
+    version: SCENARIO_EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    scenarios: savedScenarios.map((scenario, index) => sanitizeScenarioDraft(scenario, index)),
+  };
+}
+
+function downloadJsonFile(data, fileName) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function extractImportedScenarios(parsedJson) {
+  if (Array.isArray(parsedJson)) return parsedJson;
+  if (parsedJson && Array.isArray(parsedJson.scenarios)) return parsedJson.scenarios;
+
+  throw new Error('Formato JSON invalido para cenarios.');
+}
+
+function mergeImportedScenarios(rawScenarios) {
+  const importedScenarios = rawScenarios.map((scenario, index) => sanitizeScenarioDraft(scenario, index));
+  let added = 0;
+  let updated = 0;
+
+  importedScenarios.forEach(importedScenario => {
+    const existingIndex = savedScenarios.findIndex(
+      scenario => scenario.name.trim().toLowerCase() === importedScenario.name.trim().toLowerCase()
+    );
+
+    if (existingIndex !== -1) {
+      importedScenario.id = savedScenarios[existingIndex].id;
+      savedScenarios[existingIndex] = importedScenario;
+      updated++;
+      return;
+    }
+
+    savedScenarios.push(importedScenario);
+    added++;
+  });
+
+  return { added, updated, total: importedScenarios.length };
+}
+
+function setupScenarioTransferControls() {
+  const exportButton = document.getElementById('export-scenarios');
+  const importButton = document.getElementById('import-scenarios');
+  const importFileInput = document.getElementById('import-scenarios-file');
+
+  exportButton.addEventListener('click', () => {
+    if (!savedScenarios.length) {
+      alert('Nao ha cenarios salvos para exportar.');
+      return;
+    }
+
+    const payload = buildScenarioExportPayload();
+    const today = new Date().toISOString().slice(0, 10);
+    downloadJsonFile(payload, `cenarios-${today}.json`);
+  });
+
+  importButton.addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsedJson = JSON.parse(text);
+      const importedScenarios = extractImportedScenarios(parsedJson);
+
+      if (!importedScenarios.length) {
+        alert('O arquivo nao contem cenarios para importar.');
+        return;
+      }
+
+      const result = mergeImportedScenarios(importedScenarios);
+
+      if (selectedScenarioId && !savedScenarios.some(scenario => scenario.id === selectedScenarioId)) {
+        selectedScenarioId = null;
+      }
+
+      calcular();
+      alert(
+        `${result.total} cenario(s) importado(s). ${result.added} novo(s) e ${result.updated} atualizado(s).`
+      );
+    } catch {
+      alert('Nao foi possivel importar o JSON. Verifique o formato do arquivo.');
+    } finally {
+      importFileInput.value = '';
+    }
   });
 }
 
@@ -891,6 +998,7 @@ restoreControlValues();
 renderExtrasList();
 setupExtraControls();
 setupScenarioControls();
+setupScenarioTransferControls();
 calcular();
 
 (function setupTheme() {

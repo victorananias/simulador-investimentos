@@ -26,17 +26,10 @@ Adicione aportes pontuais em meses específicos com duas opções de recorrênci
 4. O cenário salvo aparece na tabela comparativa e como linha tracejada no gráfico
 
 Na tabela é possível:
-- **Selecionar** um cenário para exibi-lo como linha principal no gráfico e nos cards de resultado
-- **Mostrar/ocultar** a linha do cenário no gráfico via checkbox
-- **Alterar a cor** clicando no swatch colorido
-- **Excluir** o cenário
+- **Exportar JSON** para salvar todos os cenários em um arquivo
+- **Importar JSON** para adicionar/atualizar cenários a partir de um arquivo exportado
 
 ### Cards de resultado
-Exibem os resultados da simulação ativa (parâmetros atuais ou cenário selecionado):
-- Tempo até atingir a meta
-- Patrimônio acumulado
-- Total aportado
-- Ganho em juros
 - Rendimento mensal, anual e diário projetado ao atingir a meta
 
 ### Gráfico
