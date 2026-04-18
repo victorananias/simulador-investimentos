@@ -435,6 +435,17 @@ h1 em {
   padding: 16px;
 }
 
+.scenario-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.scenario-empty-import-btn {
+  min-width: 140px;
+}
+
 .scenario-delete-btn {
   border: 1px solid rgba(248,113,113,0.35);
   border-radius: 999px;

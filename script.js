@@ -354,6 +354,12 @@ function setupScenarioTransferControls() {
   const exportButton = document.getElementById('export-scenarios');
   const importButton = document.getElementById('import-scenarios');
   const importFileInput = document.getElementById('import-scenarios-file');
+  const compareBody = document.getElementById('compare-body');
+
+  const openImportDialog = () => {
+    importFileInput.value = '';
+    importFileInput.click();
+  };
 
   exportButton.addEventListener('click', () => {
     if (!savedScenarios.length) {
@@ -367,8 +373,13 @@ function setupScenarioTransferControls() {
   });
 
   importButton.addEventListener('click', () => {
-    importFileInput.value = '';
-    importFileInput.click();
+    openImportDialog();
+  });
+
+  compareBody.addEventListener('click', event => {
+    const emptyImportButton = event.target.closest('[data-empty-import]');
+    if (!emptyImportButton) return;
+    openImportDialog();
   });
 
   importFileInput.addEventListener('change', async event => {
@@ -813,7 +824,16 @@ function buildTable(currentKey) {
   const tbody = document.getElementById('compare-body');
   tbody.innerHTML = '';
   if (!savedScenarios.length) {
-    tbody.innerHTML = '<tr><td class="scenario-empty" colspan="10">Nenhum cenário salvo ainda.</td></tr>';
+    tbody.innerHTML = `
+      <tr>
+        <td class="scenario-empty" colspan="10">
+          <div class="scenario-empty-state">
+            <span>Nenhum cenário salvo ainda.</span>
+            <button type="button" class="scenario-transfer-btn scenario-empty-import-btn" data-empty-import>Importar JSON</button>
+          </div>
+        </td>
+      </tr>
+    `;
     return;
   }
 
