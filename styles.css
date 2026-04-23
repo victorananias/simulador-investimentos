@@ -538,6 +538,10 @@ input[type=range]::-moz-range-thumb {
   gap: 10px;
 }
 
+.withdrawal-cards {
+  margin-bottom: 10px;
+}
+
 .card {
   background: var(--bg3);
   border: 1px solid var(--border2);
@@ -611,6 +615,10 @@ input[type=range]::-moz-range-thumb {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 16px 12px;
+}
+
+.chart-wrap-secondary {
+  margin-top: 0;
 }
 
 .chart-legend {

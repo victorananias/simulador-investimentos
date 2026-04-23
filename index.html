@@ -54,6 +54,24 @@
         <input type="range" id="meta" min="0" max="5000000" step="0.01" value="0">
       </div>
 
+      <hr class="divider">
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Retirada mensal</span>
+          <input class="control-value control-value-input" id="v-retirada" type="text" inputmode="decimal" aria-label="Retirada mensal" value="R$ 0,00">
+        </div>
+        <input type="range" id="retirada" min="0" max="100000" step="0.01" value="0">
+      </div>
+
+      <div class="control-group" style="margin-bottom:0">
+        <div class="control-label">
+          <span>Lucro anual após a meta</span>
+          <input class="control-value control-value-input control-value-input-percent" id="v-lucro" type="text" inputmode="decimal" aria-label="Lucro anual após a meta" value="0,0%">
+        </div>
+        <input type="range" id="lucro" min="0" max="30" step="0.01" value="0">
+      </div>
+
     </section>
 
     <section class="panel extra-section" aria-labelledby="extra-title">
@@ -174,6 +192,36 @@
         </div>
       </div>
 
+      <div>
+        <div class="section-head"><h2>Patrimônio durante as retiradas</h2></div>
+        <div class="cards-3 withdrawal-cards">
+          <div class="card accent">
+            <div class="card-label">Duração estimada</div>
+            <div class="card-value" id="w-tempo">—</div>
+            <div class="card-sub" id="w-tempo-sub"></div>
+          </div>
+          <div class="card accent">
+            <div class="card-label">Total retirado</div>
+            <div class="card-value" id="w-total">—</div>
+            <div class="card-sub" id="w-total-sub"></div>
+          </div>
+          <div class="card accent">
+            <div class="card-label">Saldo projetado</div>
+            <div class="card-value" id="w-saldo">—</div>
+            <div class="card-sub" id="w-saldo-sub"></div>
+          </div>
+        </div>
+        <div class="chart-wrap chart-wrap-secondary">
+          <div class="chart-legend">
+            <span><span class="leg-dot" style="background:#fbbf24"></span>Patrimônio restante</span>
+            <span><span class="leg-dot" style="background:#4ade80"></span>Total retirado</span>
+          </div>
+          <div class="chart-inner">
+            <canvas id="withdrawal-chart" role="img" aria-label="Evolução do patrimônio após atingir a meta e iniciar retiradas"></canvas>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -194,6 +242,11 @@
   </div>
 </div>
 
-<script src="script.js"></script>
+<script src="js/app-core.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/simulation.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
