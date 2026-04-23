@@ -74,6 +74,7 @@ function applyTypedValue(controlId, rawValue, options = {}) {
 
   const range = document.getElementById(controlId);
   range.value = clampRangeValue(controlId, parsed, { skipStepSnap: true });
+  saveControlValues();
 
   if (options.recalculate !== false) App.calcular();
   return true;
