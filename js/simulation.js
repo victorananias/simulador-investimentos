@@ -214,6 +214,16 @@ function calcular() {
   const mC = accumulation.meses % 12;
   document.getElementById('c-tempo').textContent = anosC + ' anos' + (mC ? ' e ' + mC + ' meses' : '');
   document.getElementById('c-tempo-sub').textContent = accumulation.meses + ' meses no total';
+
+  const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dataMetaEl = document.getElementById('c-data-meta');
+  if (accumulation.meses > 0 && accumulation.meses < App.MAX_SIMULATION_MONTHS) {
+    const base = App.state.lastModified ? new Date(App.state.lastModified) : new Date();
+    const dataFinal = new Date(base.getFullYear(), base.getMonth() + accumulation.meses, 1);
+    dataMetaEl.textContent = 'Previsão: ' + MESES_PT[dataFinal.getMonth()] + ' de ' + dataFinal.getFullYear();
+  } else {
+    dataMetaEl.textContent = '';
+  }
   document.getElementById('c-pat').textContent = App.fmt(accumulation.saldo);
   document.getElementById('c-pat-sub').textContent = App.fmtFull(Math.round(accumulation.saldo));
   document.getElementById('c-inv').textContent = App.fmt(accumulation.total);

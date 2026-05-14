@@ -41,6 +41,7 @@ App.state = {
   extrasState: [],
   savedScenarios: [],
   selectedScenarioId: null,
+  lastModified: null,
 };
 
 function hasFraction(value) {

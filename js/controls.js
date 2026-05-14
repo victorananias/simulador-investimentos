@@ -74,6 +74,7 @@ function applyTypedValue(controlId, rawValue, options = {}) {
 
   const range = document.getElementById(controlId);
   range.value = clampRangeValue(controlId, parsed, { skipStepSnap: true });
+  App.touchLastModified();
   saveControlValues();
 
   if (options.recalculate !== false) App.calcular();
@@ -150,15 +151,23 @@ function saveControlValues() {
       extras: App.state.extrasState,
       scenarios: App.state.savedScenarios,
       selectedScenarioId: App.state.selectedScenarioId,
+      lastModified: App.state.lastModified,
     }));
   } catch {
   }
 }
 
+function touchLastModified() {
+  App.state.lastModified = new Date().toISOString();
+}
+
 function restoreControlValues() {
   try {
     const savedValues = localStorage.getItem(App.STORAGE_KEY);
-    if (!savedValues) return;
+    if (!savedValues) {
+      App.state.lastModified = new Date().toISOString();
+      return;
+    }
 
     const parsedValues = JSON.parse(savedValues);
     const controlValues = parsedValues && parsedValues.controls ? parsedValues.controls : parsedValues;
@@ -187,10 +196,15 @@ function restoreControlValues() {
     App.state.selectedScenarioId = App.state.savedScenarios.some(scenario => scenario.id === restoredSelectedId)
       ? restoredSelectedId
       : null;
+
+    App.state.lastModified = typeof parsedValues?.lastModified === 'string'
+      ? parsedValues.lastModified
+      : new Date().toISOString();
   } catch {
     App.state.extrasState = [];
     App.state.savedScenarios = [];
     App.state.selectedScenarioId = null;
+    App.state.lastModified = new Date().toISOString();
   }
 }
 
@@ -209,5 +223,6 @@ Object.assign(App, {
   setupEditableControls,
   saveControlValues,
   restoreControlValues,
+  touchLastModified,
 });
 })();

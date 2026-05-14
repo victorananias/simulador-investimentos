@@ -78,6 +78,7 @@ function setupExtraControls() {
   addButton.addEventListener('click', () => {
     App.state.extrasState.push(App.createDefaultExtra());
     renderExtrasList();
+    App.touchLastModified();
     App.calcular();
   });
 
@@ -91,6 +92,7 @@ function setupExtraControls() {
     const index = Number(item.dataset.extraIndex);
     App.state.extrasState.splice(index, 1);
     renderExtrasList();
+    App.touchLastModified();
     App.calcular();
   });
 
@@ -112,6 +114,7 @@ function setupExtraControls() {
       extra[field] = event.target.value;
     }
 
+    App.touchLastModified();
     App.calcular();
   });
 
@@ -125,6 +128,7 @@ function setupExtraControls() {
 
     extra[field] = event.target.value;
     if (field === 'recurrence') renderExtrasList();
+    App.touchLastModified();
     App.calcular();
   });
 

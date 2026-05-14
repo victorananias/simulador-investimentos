@@ -53,6 +53,7 @@ function init() {
   App.CONTROL_IDS.forEach(controlId => {
     document.getElementById(controlId).addEventListener('input', () => {
       App.normalizeSliderControlValue(controlId);
+      App.touchLastModified();
       App.calcular();
     });
   });
