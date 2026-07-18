@@ -61,10 +61,9 @@ function renderExtrasList() {
             <span class="extra-field-label">Ano da simulacao</span>
             <input class="extra-year-input" data-extra-field="year" type="number" min="1" max="50" step="1" value="${yearValue}"${yearDisabled}>
           </label>
-        </div>
-        <div class="extra-actions">
-          <span class="extra-meta">Ano 1 representa os primeiros 12 meses da simulacao.</span>
-          <button type="button" class="extra-remove-btn" data-extra-action="remove">Remover</button>
+          <div class="extra-field extra-field-action">
+            <button type="button" class="extra-remove-btn" data-extra-action="remove">Remover</button>
+          </div>
         </div>
       </div>
     `;

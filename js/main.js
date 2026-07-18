@@ -89,12 +89,13 @@ function init() {
     document.getElementById(controlId).addEventListener('input', () => {
       App.normalizeSliderControlValue(controlId);
       App.touchLastModified();
-      App.calcular();
+      App.calcular({ changedControlId: controlId });
     });
   });
 
   App.setupEditableControls();
   App.restoreControlValues();
+  document.getElementById('v-anos-retirada').value = Math.max(1, Math.round(Number(document.getElementById('anosRetirada').value) || 1)) + ' anos';
   App.renderExtrasList();
   App.setupExtraControls();
   App.setupScenarioControls();

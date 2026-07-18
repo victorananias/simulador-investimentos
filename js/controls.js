@@ -22,23 +22,34 @@ function applyControlSnapshot(snapshot) {
 function parseControlValue(controlId, value) {
   const { kind } = App.CONTROL_CONFIG[controlId];
   if (kind === 'currency') return App.normalizeNumberInput(value);
+  if (kind === 'integer') {
+    const parsed = App.normalizeNumberInput(value);
+    if (!Number.isFinite(parsed)) return null;
+    return Math.round(parsed);
+  }
   return App.normalizeNumberInput(value);
 }
 
 function formatControlValue(controlId, value) {
   const { kind } = App.CONTROL_CONFIG[controlId];
   if (kind === 'percent') return value.toFixed(1).replace('.', ',') + '%';
+  if (kind === 'integer') return Math.max(1, Math.round(value)) + ' anos';
   return App.fmtFull(value);
 }
 
 function formatEditableValue(controlId, value) {
   const { kind } = App.CONTROL_CONFIG[controlId];
   if (kind === 'percent') return value.toFixed(1).replace('.', ',');
+  if (kind === 'integer') return String(Math.max(1, Math.round(value)));
   return App.formatEditableCurrency(value);
 }
 
 function isCurrencyControl(controlId) {
   return App.CONTROL_CONFIG[controlId].kind === 'currency';
+}
+
+function isIntegerControl(controlId) {
+  return App.CONTROL_CONFIG[controlId].kind === 'integer';
 }
 
 function getDisplayInput(controlId) {
@@ -61,6 +72,7 @@ function clampRangeValue(controlId, value, options = {}) {
 
 function syncDisplayValues() {
   App.CONTROL_IDS.forEach(controlId => {
+    if (controlId === 'anosRetirada') return;
     const range = document.getElementById(controlId);
     const display = getDisplayInput(controlId);
     if (document.activeElement === display) return;
@@ -77,7 +89,7 @@ function applyTypedValue(controlId, rawValue, options = {}) {
   App.touchLastModified();
   saveControlValues();
 
-  if (options.recalculate !== false) App.calcular();
+  if (options.recalculate !== false) App.calcular({ changedControlId: controlId });
   return true;
 }
 
@@ -115,13 +127,25 @@ function setupEditableControls() {
         return;
       }
 
+      if (isIntegerControl(controlId)) {
+        const digits = display.value.replace(/\D/g, '');
+        display.value = digits;
+        display.setSelectionRange(digits.length, digits.length);
+        if (digits) applyTypedValue(controlId, digits);
+        return;
+      }
+
       applyTypedValue(controlId, display.value);
     });
 
     display.addEventListener('blur', () => {
       if (!applyTypedValue(controlId, display.value)) {
         range.value = display.dataset.previousValue || range.value;
-        App.calcular();
+        App.calcular({ changedControlId: controlId });
+      }
+      if (isIntegerControl(controlId)) {
+        display.value = formatControlValue(controlId, Number(range.value));
+        return;
       }
       display.value = formatControlValue(controlId, Number(range.value));
     });
@@ -132,7 +156,7 @@ function setupEditableControls() {
       if (event.key === 'Escape') {
         range.value = display.dataset.previousValue || range.value;
         display.value = formatControlValue(controlId, Number(range.value));
-        App.calcular();
+        App.calcular({ changedControlId: controlId });
         display.blur();
       }
     });
@@ -215,6 +239,7 @@ Object.assign(App, {
   formatControlValue,
   formatEditableValue,
   isCurrencyControl,
+  isIntegerControl,
   getDisplayInput,
   clampRangeValue,
   syncDisplayValues,

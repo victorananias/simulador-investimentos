@@ -17,87 +17,6 @@
   </header>
 
   <div class="layout">
-    <section class="panel">
-      <div class="panel-title">Parâmetros</div>
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Capital inicial</span>
-          <input class="control-value control-value-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 0,00">
-        </div>
-        <input type="range" id="inicial" min="0" max="200000" step="0.01" value="0">
-      </div>
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Aporte mensal</span>
-          <input class="control-value control-value-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 0,00">
-        </div>
-        <input type="range" id="aporte" min="0" max="20000" step="0.01" value="0">
-      </div>
-
-      <hr class="divider">
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Juros ao ano</span>
-          <input class="control-value control-value-input control-value-input-percent" id="v-juros" type="text" inputmode="decimal" aria-label="Juros ao ano" value="0,0%">
-        </div>
-        <input type="range" id="juros" min="0" max="30" step="0.01" value="0">
-      </div>
-
-      <div class="control-group" style="margin-bottom:0">
-        <div class="control-label">
-          <span>Meta</span>
-          <input class="control-value control-value-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 0,00">
-        </div>
-        <input type="range" id="meta" min="0" max="5000000" step="0.01" value="0">
-      </div>
-
-      <hr class="divider">
-
-      <div class="control-group">
-        <div class="control-label">
-          <span>Retirada mensal</span>
-          <input class="control-value control-value-input" id="v-retirada" type="text" inputmode="decimal" aria-label="Retirada mensal" value="R$ 0,00">
-        </div>
-        <input type="range" id="retirada" min="0" max="100000" step="0.01" value="0">
-      </div>
-
-      <div class="control-group" style="margin-bottom:0">
-        <div class="control-label">
-          <span>Lucro anual após a meta</span>
-          <input class="control-value control-value-input control-value-input-percent" id="v-lucro" type="text" inputmode="decimal" aria-label="Lucro anual após a meta" value="0,0%">
-        </div>
-        <input type="range" id="lucro" min="0" max="30" step="0.01" value="0">
-      </div>
-
-    </section>
-
-    <section class="panel extra-section" aria-labelledby="extra-title">
-      <div class="panel-title extra-title-row">
-        <span id="extra-title">Aportes extras</span>
-        <button type="button" class="extra-add-btn" id="add-extra">Adicionar</button>
-      </div>
-      <p class="extra-help">Escolha um mês, o valor do aporte e se ele se repete todo ano ou apenas em um ano específico da simulação.</p>
-      <div class="extra-list" id="extra-list"></div>
-    </section>
-
-    <section class="panel scenario-section" aria-labelledby="scenario-title">
-      <div class="panel-title" id="scenario-title">Salvar cenário</div>
-      <div class="scenario-form">
-        <label class="scenario-field">
-          <span class="extra-field-label">Nome</span>
-          <input class="extra-input" id="scenario-name" type="text" placeholder="Ex.: Conservador 12%">
-        </label>
-        <label class="scenario-field">
-          <span class="extra-field-label">Cor no gráfico</span>
-          <input class="scenario-color" id="scenario-color" type="color" value="#4ade80" aria-label="Cor do cenário">
-        </label>
-        <button type="button" class="scenario-save-btn" id="save-scenario">Salvar cenário</button>
-      </div>
-    </section>
-
     <section class="panel" aria-labelledby="saved-scenarios-title">
       <div class="section-head"><h2 id="saved-scenarios-title">Comparativo de cenários</h2></div>
       <div class="scenario-transfer-actions" aria-label="Importação e exportação de cenários">
@@ -123,6 +42,69 @@
           </thead>
           <tbody id="compare-body"></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="panel parameters-panel">
+      <div class="panel-title">Parâmetros</div>
+
+      <div class="controls-inline">
+        <div class="control-group">
+          <div class="control-label">
+            <span>Capital inicial</span>
+            <input class="control-value control-value-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 0,00">
+          </div>
+          <input type="range" id="inicial" min="0" max="200000" step="0.01" value="0">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Aporte mensal</span>
+            <input class="control-value control-value-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 0,00">
+          </div>
+          <input type="range" id="aporte" min="0" max="20000" step="0.01" value="0">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Juros ao ano</span>
+            <input class="control-value control-value-input control-value-input-percent" id="v-juros" type="text" inputmode="decimal" aria-label="Juros ao ano" value="0,0%">
+          </div>
+          <input type="range" id="juros" min="0" max="30" step="0.01" value="0">
+        </div>
+
+        <div class="control-group" style="margin-bottom:0">
+          <div class="control-label">
+            <span>Meta</span>
+            <input class="control-value control-value-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 0,00">
+          </div>
+          <input type="range" id="meta" min="0" max="5000000" step="0.01" value="0">
+        </div>
+      </div>
+
+    </section>
+
+    <section class="panel extra-section" aria-labelledby="extra-title">
+      <div class="panel-title extra-title-row">
+        <span id="extra-title">Aportes extras</span>
+        <button type="button" class="extra-add-btn" id="add-extra">Adicionar</button>
+      </div>
+      <p class="extra-help">Escolha um mês, o valor do aporte e se ele se repete todo ano ou apenas em um ano específico da simulação. Ano 1 representa os primeiros 12 meses da simulacao.</p>
+      <div class="extra-list" id="extra-list"></div>
+    </section>
+
+    <section class="panel scenario-section" aria-labelledby="scenario-title">
+      <div class="panel-title" id="scenario-title">Salvar cenário</div>
+      <div class="scenario-form">
+        <label class="scenario-field">
+          <span class="extra-field-label">Nome</span>
+          <input class="extra-input" id="scenario-name" type="text" placeholder="Ex.: Conservador 12%">
+        </label>
+        <label class="scenario-field">
+          <span class="extra-field-label">Cor no gráfico</span>
+          <input class="scenario-color" id="scenario-color" type="color" value="#4ade80" aria-label="Cor do cenário">
+        </label>
+        <button type="button" class="scenario-save-btn" id="save-scenario">Salvar cenário</button>
       </div>
     </section>
 
@@ -199,7 +181,32 @@
       </div>
 
       <div>
-        <div class="section-head"><h2>Patrimônio durante as retiradas</h2></div>
+        <div class="section-head"><h2>Patrimônio pós meta</h2></div>
+        <div class="withdrawal-inputs" aria-label="Controles da fase de retirada">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Meta de duração</span>
+              <input class="control-value control-value-input control-value-input-years" id="v-anos-retirada" type="text" inputmode="numeric" aria-label="Duração da retirada em anos" value="20">
+            </div>
+            <input type="range" id="anosRetirada" min="1" max="10000" step="1" value="20">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Retirada mensal</span>
+              <input class="control-value control-value-input" id="v-retirada" type="text" inputmode="decimal" aria-label="Retirada mensal" value="R$ 0,00">
+            </div>
+            <input type="range" id="retirada" min="0" max="100000" step="0.01" value="0">
+          </div>
+
+          <div class="control-group" style="margin-bottom:0">
+            <div class="control-label">
+              <span>Lucro anual após a meta</span>
+              <input class="control-value control-value-input control-value-input-percent" id="v-lucro" type="text" inputmode="decimal" aria-label="Lucro anual após a meta" value="0,0%">
+            </div>
+            <input type="range" id="lucro" min="0" max="30" step="0.01" value="0">
+          </div>
+        </div>
         <div class="cards-3 withdrawal-cards">
           <div class="card accent">
             <div class="card-label">Duração estimada</div>
@@ -264,6 +271,7 @@
       <p>
         O simulador usa capitalização mensal. Primeiro converte taxas anuais em taxa mensal e depois aplica juros compostos mês a mês.
       </p>
+      <h4>Evolução do patrimônio</h4>
       <h4>1) Conversão de taxa</h4>
       <p>
         taxa_mensal = (1 + taxa_anual)^(1/12) - 1
@@ -275,6 +283,7 @@
       <p>
         O total aportado soma o inicial + todos os aportes mensais + aportes extras.
       </p>
+      <h4>Pós-meta</h4>
       <h4>3) Rendimento após a meta</h4>
       <p>
         por_mes = patrimonio_na_meta x taxa_mensal_pos_meta
@@ -300,10 +309,16 @@
       </p>
       <h4>5) Sugestão de retirada/mês</h4>
       <p>
-        sugestao_retirada = maximo(0, patrimonio_na_meta x taxa_mensal_pos_meta)
+        meses_planejados = anos_retirada x 12
       </p>
       <p>
-        Nesse modelo, retirar ate esse valor tende a manter o principal ao longo do tempo.
+        se taxa_mensal_pos_meta = 0: sugestao_retirada = patrimonio_na_meta / meses_planejados
+      </p>
+      <p>
+        se taxa_mensal_pos_meta > 0: sugestao_retirada = patrimonio_na_meta x taxa_mensal_pos_meta / (1 - (1 + taxa_mensal_pos_meta)^(-meses_planejados))
+      </p>
+      <p>
+        Nesse modelo, a sugestão considera o lucro pós-meta continuando ao longo do período e busca zerar o saldo no fim do prazo escolhido.
       </p>
     </div>
   </div>

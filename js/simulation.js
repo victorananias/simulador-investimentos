@@ -94,6 +94,28 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
   };
 }
 
+function estimarDuracaoRetiradaMeses(saldoInicial, retiradaMensal, taxaAnual) {
+  if (saldoInicial <= 0) return 0;
+  if (retiradaMensal <= 0) return Number.POSITIVE_INFINITY;
+
+  const taxaMensal = Math.pow(1 + taxaAnual, 1 / 12) - 1;
+
+  if (Math.abs(taxaMensal) < 1e-9) {
+    return saldoInicial / retiradaMensal;
+  }
+
+  const razao = (saldoInicial * taxaMensal) / retiradaMensal;
+  const base = 1 + taxaMensal;
+  const termo = 1 - razao;
+
+  if (base <= 0 || termo <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const meses = -Math.log(termo) / Math.log(base);
+  return Number.isFinite(meses) && meses > 0 ? meses : Number.POSITIVE_INFINITY;
+}
+
 function buildTable(currentKey) {
   const tbody = document.getElementById('compare-body');
   tbody.innerHTML = '';
@@ -133,7 +155,15 @@ function buildTable(currentKey) {
     if (isSelected) row.className = 'selected-row';
 
     row.innerHTML = `
-      <td>${App.escapeHtml(scenario.name)}</td>
+      <td>
+        <input
+          class="scenario-name-input"
+          type="text"
+          data-scenario-rename="${App.escapeHtml(scenario.id)}"
+          value="${App.escapeHtml(scenario.name)}"
+          aria-label="Renomear cenário ${App.escapeHtml(scenario.name)}"
+        >
+      </td>
       <td><input class="scenario-visible-check" type="checkbox" data-scenario-visible="${App.escapeHtml(scenario.id)}"${scenario.visible === false ? '' : ' checked'}></td>
       <td><input class="scenario-color-input" type="color" data-scenario-color="${App.escapeHtml(scenario.id)}" value="${App.escapeHtml(App.normalizeScenarioColor(scenario.color))}" aria-label="Cor do cenário ${App.escapeHtml(scenario.name)}"></td>
       <td class="highlight">${App.fmtFull(scenario.inicial)}</td>
@@ -143,8 +173,10 @@ function buildTable(currentKey) {
       <td class="highlight">${App.mesesParaTexto(result.meses)}</td>
       <td class="highlight">${App.fmt(rendMes)}</td>
       <td>
-        <button type="button" class="scenario-select-btn${isSelected ? ' scenario-select-btn--active' : ''}" data-scenario-select="${App.escapeHtml(scenario.id)}">${isSelected ? 'Selecionado' : 'Selecionar'}</button>
-        <button type="button" class="scenario-delete-btn" data-scenario-delete="${App.escapeHtml(scenario.id)}">Excluir</button>
+        <div class="scenario-actions">
+          <button type="button" class="scenario-select-btn${isSelected ? ' scenario-select-btn--active' : ''}" data-scenario-select="${App.escapeHtml(scenario.id)}">${isSelected ? 'Selecionado' : 'Selecionar'}</button>
+          <button type="button" class="scenario-delete-btn" data-scenario-delete="${App.escapeHtml(scenario.id)}">Excluir</button>
+        </div>
       </td>
     `;
 
@@ -152,7 +184,11 @@ function buildTable(currentKey) {
   });
 }
 
-function calcular() {
+function calcular(options = {}) {
+  const changedControlId = typeof options === 'string' ? options : options.changedControlId;
+  const postGoalControlIds = new Set(['anosRetirada', 'retirada', 'lucro']);
+  const shouldSkipPrimaryChartRebuild = Boolean(changedControlId && postGoalControlIds.has(changedControlId));
+
   const selectedScenario = App.state.selectedScenarioId
     ? App.state.savedScenarios.find(scenario => scenario.id === App.state.selectedScenarioId)
     : null;
@@ -161,6 +197,7 @@ function calcular() {
   const aporte = Number(document.getElementById('aporte').value);
   const taxaAnual = Number(document.getElementById('juros').value) / 100;
   const meta = Number(document.getElementById('meta').value);
+  const anosRetirada = Number(document.getElementById('anosRetirada').value);
   const retirada = Number(document.getElementById('retirada').value);
   const lucro = Number(document.getElementById('lucro').value);
   const extras = App.getActiveExtras();
@@ -186,8 +223,9 @@ function calcular() {
       )
     : simular(inicial, aporte, taxaAnual, meta, extras);
 
-  const retiradaMensalAtiva = selectedScenario ? selectedScenario.retirada : retirada;
-  const lucroAnualAtivo = (selectedScenario ? selectedScenario.lucro : lucro) / 100;
+  const anosRetiradaAtivo = Math.max(1, Math.round(anosRetirada));
+  const retiradaMensalAtiva = retirada;
+  const lucroAnualAtivo = lucro / 100;
   const retiradaProjection = simularRetirada(accumulation.saldo, retiradaMensalAtiva, lucroAnualAtivo);
 
   const allScenarioSeries = App.state.savedScenarios.map(scenario => {
@@ -238,7 +276,20 @@ function calcular() {
   const rendimentoMes = accumulation.saldo * taxaMensalPosMeta;
   const rendimentoAno = accumulation.saldo * lucroAnualAtivo;
   const rendimentoDia = rendimentoAno / 365;
-  const sugestaoRetiradaMensal = Math.max(0, rendimentoMes);
+  const mesesPlanejadosRetirada = Math.max(1, anosRetiradaAtivo * 12);
+  let sugestaoRetiradaMensal = 0;
+  if (accumulation.saldo > 0) {
+    if (Math.abs(taxaMensalPosMeta) < 1e-9) {
+      sugestaoRetiradaMensal = accumulation.saldo / mesesPlanejadosRetirada;
+    } else {
+      const denominator = 1 - Math.pow(1 + taxaMensalPosMeta, -mesesPlanejadosRetirada);
+      sugestaoRetiradaMensal = denominator > 0
+        ? (accumulation.saldo * taxaMensalPosMeta) / denominator
+        : accumulation.saldo / mesesPlanejadosRetirada;
+    }
+  }
+
+  sugestaoRetiradaMensal = Math.max(0, sugestaoRetiradaMensal);
 
   document.getElementById('r-mes').textContent = App.fmt(rendimentoMes);
   document.getElementById('r-mes-sub').textContent = App.fmtFull(Math.round(rendimentoMes)) + '/mês';
@@ -247,15 +298,20 @@ function calcular() {
   document.getElementById('r-dia').textContent = App.fmt(rendimentoDia);
   document.getElementById('r-dia-sub').textContent = App.fmtFull(Math.round(rendimentoDia)) + '/dia';
 
-  const withdrawalYears = Math.floor(retiradaProjection.meses / 12);
-  const withdrawalMonths = retiradaProjection.meses % 12;
-  const withdrawalHorizonLabel = retiradaProjection.limitadoPeloHorizonte
-    ? 'Mais de 50 anos'
-    : withdrawalYears + ' anos' + (withdrawalMonths ? ' e ' + withdrawalMonths + ' meses' : '');
+  const duracaoExataMeses = estimarDuracaoRetiradaMeses(accumulation.saldo, retiradaMensalAtiva, lucroAnualAtivo);
+  const duracaoFinita = Number.isFinite(duracaoExataMeses);
+  const duracaoMesesArredondada = duracaoFinita ? Math.max(1, Math.ceil(duracaoExataMeses)) : 0;
+  const withdrawalYears = Math.floor(duracaoMesesArredondada / 12);
+  const withdrawalMonths = duracaoMesesArredondada % 12;
+  const withdrawalHorizonLabel = duracaoFinita
+    ? withdrawalYears + ' anos' + (withdrawalMonths ? ' e ' + withdrawalMonths + ' meses' : '')
+    : 'Não zera';
 
-  document.getElementById('w-tempo').textContent = retiradaProjection.meses ? withdrawalHorizonLabel : '—';
-  document.getElementById('w-tempo-sub').textContent = retiradaProjection.meses
-    ? (retiradaProjection.esgotado ? 'Patrimônio zerado ao final da projeção' : 'Patrimônio ainda positivo ao fim da projeção')
+  document.getElementById('w-tempo').textContent = accumulation.saldo > 0 ? withdrawalHorizonLabel : '—';
+  document.getElementById('w-tempo-sub').textContent = accumulation.saldo > 0
+    ? (duracaoFinita
+      ? App.fmtFull(Math.round(retiradaMensalAtiva)) + '/mês até zerar'
+      : 'Com essa retirada, o patrimônio não zera no modelo')
     : 'Informe uma meta para iniciar a fase de retirada';
   document.getElementById('w-total').textContent = App.fmt(retiradaProjection.totalRetirado);
   document.getElementById('w-total-sub').textContent = App.fmtFull(Math.round(retiradaProjection.totalRetirado)) + ' acumulados';
@@ -263,71 +319,73 @@ function calcular() {
   document.getElementById('w-saldo-sub').textContent = retiradaProjection.limitadoPeloHorizonte
     ? 'Saldo ao fim do horizonte de 50 anos'
     : App.fmtFull(Math.round(retiradaProjection.saldo));
-  document.getElementById('w-sugestao').textContent = App.fmt(sugestaoRetiradaMensal);
+  document.getElementById('w-sugestao').textContent = App.fmtFull(sugestaoRetiradaMensal);
   document.getElementById('w-sugestao-sub').textContent = sugestaoRetiradaMensal > 0
-    ? App.fmtFull(Math.round(sugestaoRetiradaMensal)) + ' como sugestão para manter o principal'
-    : 'Com lucro de 0% a.a., sugestão de retirada e R$ 0,00';
+    ? App.fmtFull(sugestaoRetiradaMensal) + '/mês considerando lucro pós-meta por ' + anosRetiradaAtivo + ' anos'
+    : 'Sem patrimônio para projetar sugestão de retirada';
 
   const chartTheme = App.getChartThemePalette();
 
-  if (App.state.chartInst) App.state.chartInst.destroy();
-  App.state.chartInst = new Chart(document.getElementById('chart'), {
-    type: 'line',
-    data: {
-      labels: chartLabels,
-      datasets: savedScenarioSeries.map(({ scenario, result }) => {
-        const isSelectedSeries = scenario.id === App.state.selectedScenarioId;
-        const seriesColor = App.normalizeScenarioColor(scenario.color);
+  if (!shouldSkipPrimaryChartRebuild) {
+    if (App.state.chartInst) App.state.chartInst.destroy();
+    App.state.chartInst = new Chart(document.getElementById('chart'), {
+      type: 'line',
+      data: {
+        labels: chartLabels,
+        datasets: savedScenarioSeries.map(({ scenario, result }) => {
+          const isSelectedSeries = scenario.id === App.state.selectedScenarioId;
+          const seriesColor = App.normalizeScenarioColor(scenario.color);
 
-        return {
-          label: scenario.name,
-          data: App.alignSeriesData(result.pat, chartLabels.length),
-          borderColor: seriesColor,
-          backgroundColor: isSelectedSeries ? App.hexToRgba(seriesColor, 0.16) : 'transparent',
-          fill: isSelectedSeries,
-          tension: 0.35,
-          pointRadius: 0,
-          borderWidth: isSelectedSeries ? 2.2 : 1.6,
-          borderDash: isSelectedSeries ? [] : [6, 4],
-        };
-      })
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: chartTheme.tooltipBg,
-          borderColor: chartTheme.tooltipBorder,
-          borderWidth: 1,
-          titleColor: chartTheme.tooltipTitle,
-          bodyColor: chartTheme.tooltipBody,
-          titleFont: { family: 'DM Mono', size: 11 },
-          bodyFont: { family: 'DM Mono', size: 12 },
-          callbacks: {
-            label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
+          return {
+            label: scenario.name,
+            data: App.alignSeriesData(result.pat, chartLabels.length),
+            borderColor: seriesColor,
+            backgroundColor: isSelectedSeries ? App.hexToRgba(seriesColor, 0.16) : 'transparent',
+            fill: isSelectedSeries,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: isSelectedSeries ? 2.2 : 1.6,
+            borderDash: isSelectedSeries ? [] : [6, 4],
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: chartTheme.tooltipBg,
+            borderColor: chartTheme.tooltipBorder,
+            borderWidth: 1,
+            titleColor: chartTheme.tooltipTitle,
+            bodyColor: chartTheme.tooltipBody,
+            titleFont: { family: 'DM Mono', size: 11 },
+            bodyFont: { family: 'DM Mono', size: 12 },
+            callbacks: {
+              label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: value => value >= 1000000 ? (value / 1000000).toFixed(1) + 'M' : value >= 1000 ? (value / 1000) + 'k' : value,
+              font: { family: 'DM Mono', size: 10 },
+              color: chartTheme.axisText,
+            },
+            grid: { color: chartTheme.yGrid },
+            border: { color: 'transparent' },
+          },
+          x: {
+            ticks: { font: { family: 'DM Mono', size: 10 }, color: chartTheme.axisText, maxTicksLimit: 10 },
+            grid: { display: false },
+            border: { color: 'transparent' },
           }
         }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: value => value >= 1000000 ? (value / 1000000).toFixed(1) + 'M' : value >= 1000 ? (value / 1000) + 'k' : value,
-            font: { family: 'DM Mono', size: 10 },
-            color: chartTheme.axisText,
-          },
-          grid: { color: chartTheme.yGrid },
-          border: { color: 'transparent' },
-        },
-        x: {
-          ticks: { font: { family: 'DM Mono', size: 10 }, color: chartTheme.axisText, maxTicksLimit: 10 },
-          grid: { display: false },
-          border: { color: 'transparent' },
-        }
       }
-    }
-  });
+    });
+  }
 
   if (App.state.withdrawalChartInst) App.state.withdrawalChartInst.destroy();
   App.state.withdrawalChartInst = new Chart(document.getElementById('withdrawal-chart'), {
@@ -401,6 +459,7 @@ function calcular() {
 Object.assign(App, {
   simular,
   simularRetirada,
+  estimarDuracaoRetiradaMeses,
   buildTable,
   calcular,
 });

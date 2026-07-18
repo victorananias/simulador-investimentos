@@ -14,6 +14,7 @@ function collectCurrentScenario(controlSnapshot = null) {
     aporte: Number(snapshot.aporte),
     taxa: Number(snapshot.juros),
     meta: Number(snapshot.meta),
+    anosRetirada: Number(snapshot.anosRetirada),
     retirada: Number(snapshot.retirada),
     lucro: Number(snapshot.lucro),
     visible: true,
@@ -54,18 +55,30 @@ function mergeImportedScenarios(rawScenarios) {
   const importedScenarios = rawScenarios.map((scenario, index) => App.sanitizeScenarioDraft(scenario, index));
   let added = 0;
   let updated = 0;
+  const existingIds = new Set(App.state.savedScenarios.map(scenario => scenario.id));
+  const usedImportIds = new Set();
+  const existingNames = new Set(
+    App.state.savedScenarios.map(scenario => scenario.name.trim().toLowerCase())
+  );
 
   importedScenarios.forEach(importedScenario => {
-    const existingIndex = App.state.savedScenarios.findIndex(scenario => {
-      return scenario.name.trim().toLowerCase() === importedScenario.name.trim().toLowerCase();
-    });
-
-    if (existingIndex !== -1) {
-      importedScenario.id = App.state.savedScenarios[existingIndex].id;
-      App.state.savedScenarios[existingIndex] = importedScenario;
-      updated++;
-      return;
+    const idAlreadyUsed = usedImportIds.has(importedScenario.id) || existingIds.has(importedScenario.id);
+    if (!importedScenario.id || idAlreadyUsed) {
+      importedScenario.id = crypto.randomUUID();
     }
+    usedImportIds.add(importedScenario.id);
+
+    const originalName = importedScenario.name.trim() || `Cenario ${App.state.savedScenarios.length + added + 1}`;
+    let candidateName = originalName;
+    let suffix = 2;
+
+    while (existingNames.has(candidateName.toLowerCase())) {
+      candidateName = `${originalName} (${suffix})`;
+      suffix++;
+    }
+
+    importedScenario.name = candidateName;
+    existingNames.add(candidateName.toLowerCase());
 
     App.state.savedScenarios.push(importedScenario);
     added++;
@@ -95,6 +108,7 @@ function setupScenarioControls() {
       App.state.savedScenarios.push(newScenario);
       nameInput.value = '';
       App.CONTROL_IDS.forEach(controlId => {
+        if (controlId === 'anosRetirada') return;
         const range = document.getElementById(controlId);
         range.value = range.defaultValue;
       });
@@ -116,6 +130,23 @@ function setupScenarioControls() {
   compareBody.addEventListener('change', event => {
     const checkbox = event.target.closest('[data-scenario-visible]');
     const colorInput = event.target.closest('[data-scenario-color]');
+    const renameInput = event.target.closest('[data-scenario-rename]');
+
+    if (renameInput) {
+      const scenario = App.state.savedScenarios.find(item => item.id === renameInput.dataset.scenarioRename);
+      if (!scenario) return;
+
+      const nextName = renameInput.value.trim();
+      scenario.name = nextName || scenario.name;
+
+      if (App.state.selectedScenarioId === scenario.id) {
+        document.getElementById('scenario-name').value = scenario.name;
+      }
+
+      App.touchLastModified();
+      App.calcular();
+      return;
+    }
 
     if (checkbox) {
       const scenario = App.state.savedScenarios.find(item => item.id === checkbox.dataset.scenarioVisible);
@@ -170,8 +201,6 @@ function setupScenarioControls() {
         document.getElementById('aporte').value = App.clampRangeValue('aporte', scenario.aporte, { skipStepSnap: true });
         document.getElementById('juros').value = App.clampRangeValue('juros', scenario.taxa, { skipStepSnap: true });
         document.getElementById('meta').value = App.clampRangeValue('meta', scenario.meta, { skipStepSnap: true });
-        document.getElementById('retirada').value = App.clampRangeValue('retirada', scenario.retirada, { skipStepSnap: true });
-        document.getElementById('lucro').value = App.clampRangeValue('lucro', scenario.lucro, { skipStepSnap: true });
         App.state.extrasState = scenario.extras.map(App.sanitizeExtraDraft);
         App.renderExtrasList();
         document.getElementById('scenario-name').value = scenario.name;
@@ -202,8 +231,11 @@ function setupScenarioTransferControls() {
     }
 
     const payload = buildScenarioExportPayload();
-    const today = new Date().toISOString().slice(0, 10);
-    downloadJsonFile(payload, `cenarios-${today}.json`);
+    const now = new Date();
+    const datePart = now.toISOString().slice(0, 10);
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    downloadJsonFile(payload, `cenarios-${datePart}-${hour}h${minute}.json`);
   });
 
   importButton.addEventListener('click', openImportDialog);

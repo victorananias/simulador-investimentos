@@ -6,6 +6,7 @@ const CONTROL_CONFIG = {
   aporte: { displayId: 'v-aporte', kind: 'currency' },
   juros: { displayId: 'v-juros', kind: 'percent' },
   meta: { displayId: 'v-meta', kind: 'currency' },
+  anosRetirada: { displayId: 'v-anos-retirada', kind: 'integer' },
   retirada: { displayId: 'v-retirada', kind: 'currency' },
   lucro: { displayId: 'v-lucro', kind: 'percent' },
 };
@@ -119,6 +120,7 @@ function sanitizeScenarioDraft(scenario = {}, fallbackIndex = 0) {
     aporte: Number.isFinite(Number(scenario.aporte)) ? Number(scenario.aporte) : 0,
     taxa: Number.isFinite(Number(scenario.taxa)) ? Number(scenario.taxa) : 0,
     meta: Number.isFinite(Number(scenario.meta)) ? Number(scenario.meta) : 0,
+    anosRetirada: Number.isFinite(Number(scenario.anosRetirada)) ? Number(scenario.anosRetirada) : 20,
     retirada: Number.isFinite(Number(scenario.retirada)) ? Number(scenario.retirada) : 0,
     lucro: Number.isFinite(Number(scenario.lucro)) ? Number(scenario.lucro) : 0,
     visible: scenario.visible !== false,
