@@ -181,7 +181,12 @@
 
       <!-- Gráfico -->
       <div>
-        <div class="section-head"><h2>Evolução do patrimônio</h2></div>
+        <div class="section-head section-head-with-action">
+          <h2>Evolução do patrimônio</h2>
+          <button type="button" class="info-trigger" id="calc-info-open" aria-haspopup="dialog" aria-controls="calc-info-modal" aria-expanded="false" title="Como os cálculos são feitos">
+            i
+          </button>
+        </div>
         <div class="chart-wrap">
           <div class="chart-legend">
             <span><span class="leg-dot" style="background:#c8f060"></span>Patrimônio projetado</span>
@@ -210,6 +215,11 @@
             <div class="card-label">Saldo projetado</div>
             <div class="card-value" id="w-saldo">—</div>
             <div class="card-sub" id="w-saldo-sub"></div>
+          </div>
+          <div class="card accent">
+            <div class="card-label">Sugestão de retirada/mês</div>
+            <div class="card-value" id="w-sugestao">—</div>
+            <div class="card-sub" id="w-sugestao-sub"></div>
           </div>
         </div>
         <div class="chart-wrap chart-wrap-secondary">
@@ -240,6 +250,62 @@
       <span id="theme-icon">☀️</span>
       <span id="theme-label">Tema claro</span>
     </button>
+  </div>
+</div>
+
+<div class="info-modal" id="calc-info-modal" hidden aria-hidden="true">
+  <div class="info-modal-backdrop" data-info-close></div>
+  <div class="info-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="calc-info-title">
+    <div class="info-modal-head">
+      <h3 id="calc-info-title">Como os cálculos funcionam</h3>
+      <button type="button" class="info-modal-close" id="calc-info-close" aria-label="Fechar explicação">Fechar</button>
+    </div>
+    <div class="info-modal-body">
+      <p>
+        O simulador usa capitalização mensal. Primeiro converte taxas anuais em taxa mensal e depois aplica juros compostos mês a mês.
+      </p>
+      <h4>1) Conversão de taxa</h4>
+      <p>
+        taxa_mensal = (1 + taxa_anual)^(1/12) - 1
+      </p>
+      <h4>2) Acumulação até a meta</h4>
+      <p>
+        saldo_novo = saldo_anterior x (1 + taxa_mensal) + aporte_mensal + extras_do_mes
+      </p>
+      <p>
+        O total aportado soma o inicial + todos os aportes mensais + aportes extras.
+      </p>
+      <h4>3) Rendimento após a meta</h4>
+      <p>
+        por_mes = patrimonio_na_meta x taxa_mensal_pos_meta
+      </p>
+      <p>
+        por_ano = patrimonio_na_meta x taxa_anual_pos_meta
+      </p>
+      <p>
+        por_dia = por_ano / 365
+      </p>
+      <h4>4) Fase de retiradas</h4>
+      <p>
+        saldo_com_lucro = saldo_anterior x (1 + taxa_mensal_pos_meta)
+      </p>
+      <p>
+        retirada_efetiva = menor(retirada_configurada, saldo_com_lucro)
+      </p>
+      <p>
+        saldo_novo = saldo_com_lucro - retirada_efetiva
+      </p>
+      <p>
+        A projeção vai ate 50 anos ou para quando o saldo zera, o que acontecer primeiro.
+      </p>
+      <h4>5) Sugestão de retirada/mês</h4>
+      <p>
+        sugestao_retirada = maximo(0, patrimonio_na_meta x taxa_mensal_pos_meta)
+      </p>
+      <p>
+        Nesse modelo, retirar ate esse valor tende a manter o principal ao longo do tempo.
+      </p>
+    </div>
   </div>
 </div>
 

@@ -238,6 +238,7 @@ function calcular() {
   const rendimentoMes = accumulation.saldo * taxaMensalPosMeta;
   const rendimentoAno = accumulation.saldo * lucroAnualAtivo;
   const rendimentoDia = rendimentoAno / 365;
+  const sugestaoRetiradaMensal = Math.max(0, rendimentoMes);
 
   document.getElementById('r-mes').textContent = App.fmt(rendimentoMes);
   document.getElementById('r-mes-sub').textContent = App.fmtFull(Math.round(rendimentoMes)) + '/mês';
@@ -262,6 +263,10 @@ function calcular() {
   document.getElementById('w-saldo-sub').textContent = retiradaProjection.limitadoPeloHorizonte
     ? 'Saldo ao fim do horizonte de 50 anos'
     : App.fmtFull(Math.round(retiradaProjection.saldo));
+  document.getElementById('w-sugestao').textContent = App.fmt(sugestaoRetiradaMensal);
+  document.getElementById('w-sugestao-sub').textContent = sugestaoRetiradaMensal > 0
+    ? App.fmtFull(Math.round(sugestaoRetiradaMensal)) + ' como sugestão para manter o principal'
+    : 'Com lucro de 0% a.a., sugestão de retirada e R$ 0,00';
 
   const chartTheme = App.getChartThemePalette();
 

@@ -49,6 +49,41 @@ function setupTheme() {
   });
 }
 
+function setupCalculationInfo() {
+  const openBtn = document.getElementById('calc-info-open');
+  const closeBtn = document.getElementById('calc-info-close');
+  const modal = document.getElementById('calc-info-modal');
+  const backdrop = modal ? modal.querySelector('[data-info-close]') : null;
+
+  if (!openBtn || !closeBtn || !modal || !backdrop) return;
+
+  function openModal() {
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    openBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    openBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    openBtn.focus();
+  }
+
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeModal();
+    }
+  });
+}
+
 function init() {
   App.CONTROL_IDS.forEach(controlId => {
     document.getElementById(controlId).addEventListener('input', () => {
@@ -64,9 +99,14 @@ function init() {
   App.setupExtraControls();
   App.setupScenarioControls();
   App.setupScenarioTransferControls();
+  App.setupCalculationInfo();
   App.calcular();
   setupTheme();
 }
+
+Object.assign(App, {
+  setupCalculationInfo,
+});
 
 init();
 })();
