@@ -223,6 +223,9 @@ function calcular(options = {}) {
       )
     : simular(inicial, aporte, taxaAnual, meta, extras);
 
+  // Rendimento apos a meta segue a mesma taxa definida na fase de acumulacao.
+  const taxaAnualRendimento = selectedScenario ? selectedScenario.taxa / 100 : taxaAnual;
+
   const anosRetiradaAtivo = Math.max(1, Math.round(anosRetirada));
   const retiradaMensalAtiva = retirada;
   const lucroAnualAtivo = lucro / 100;
@@ -272,10 +275,12 @@ function calcular(options = {}) {
   document.getElementById('c-juros').textContent = App.fmt(ganho);
   document.getElementById('c-juros-sub').textContent = ganhoPercentual + '% do patrimônio';
 
-  const taxaMensalPosMeta = Math.pow(1 + lucroAnualAtivo, 1 / 12) - 1;
-  const rendimentoMes = accumulation.saldo * taxaMensalPosMeta;
-  const rendimentoAno = accumulation.saldo * lucroAnualAtivo;
+  const taxaMensalRendimento = Math.pow(1 + taxaAnualRendimento, 1 / 12) - 1;
+  const rendimentoMes = accumulation.saldo * taxaMensalRendimento;
+  const rendimentoAno = accumulation.saldo * taxaAnualRendimento;
   const rendimentoDia = rendimentoAno / 365;
+
+  const taxaMensalPosMeta = Math.pow(1 + lucroAnualAtivo, 1 / 12) - 1;
   const mesesPlanejadosRetirada = Math.max(1, anosRetiradaAtivo * 12);
   let sugestaoRetiradaMensal = 0;
   if (accumulation.saldo > 0) {
