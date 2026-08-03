@@ -357,6 +357,8 @@ function calcular(options = {}) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        hover: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -368,6 +370,7 @@ function calcular(options = {}) {
             titleFont: { family: 'DM Mono', size: 11 },
             bodyFont: { family: 'DM Mono', size: 12 },
             callbacks: {
+              title: context => context[0]?.label ?? '',
               label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
             }
           }
@@ -424,6 +427,8 @@ function calcular(options = {}) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      hover: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -435,6 +440,7 @@ function calcular(options = {}) {
           titleFont: { family: 'DM Mono', size: 11 },
           bodyFont: { family: 'DM Mono', size: 12 },
           callbacks: {
+            title: context => context[0]?.label ?? '',
             label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
           }
         }
