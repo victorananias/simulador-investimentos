@@ -84,6 +84,17 @@ function setupCalculationInfo() {
   });
 }
 
+function setupChartVisibilityToggle() {
+  const checkbox = document.getElementById('chart-show-all');
+  if (!checkbox) return;
+
+  checkbox.checked = App.state.showAllScenarios;
+  checkbox.addEventListener('change', () => {
+    App.state.showAllScenarios = checkbox.checked;
+    App.calcular();
+  });
+}
+
 function init() {
   App.CONTROL_IDS.forEach(controlId => {
     document.getElementById(controlId).addEventListener('input', () => {
@@ -101,12 +112,14 @@ function init() {
   App.setupScenarioControls();
   App.setupScenarioTransferControls();
   App.setupCalculationInfo();
+  setupChartVisibilityToggle();
   App.calcular();
   setupTheme();
 }
 
 Object.assign(App, {
   setupCalculationInfo,
+  setupChartVisibilityToggle,
 });
 
 init();

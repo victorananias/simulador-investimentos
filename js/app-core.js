@@ -42,6 +42,7 @@ App.state = {
   extrasState: [],
   savedScenarios: [],
   selectedScenarioId: null,
+  showAllScenarios: false,
   lastModified: null,
 };
 
@@ -171,6 +172,16 @@ function alignSeriesData(source, length) {
   return result;
 }
 
+function formatChartDate(date) {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  return value.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
 function buildChartLabels(primary, scenarioSeries) {
   const allSeries = [primary, ...scenarioSeries];
   const longest = allSeries.reduce((best, series) => {
@@ -219,6 +230,7 @@ Object.assign(App, {
   normalizeNumberInput,
   formatEditableCurrency,
   alignSeriesData,
+  formatChartDate,
   buildChartLabels,
   getCssVarValue,
   getChartThemePalette,

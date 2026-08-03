@@ -9,6 +9,8 @@ function simular(inicial, aporte, taxaAnual, meta, extras = []) {
   const pat = [];
   const inv = [];
   const labels = [];
+  const dates = [];
+  const baseDate = App.state.lastModified ? new Date(App.state.lastModified) : new Date();
 
   while (saldo < meta && meses < App.MAX_SIMULATION_MONTHS) {
     meses++;
@@ -32,10 +34,11 @@ function simular(inicial, aporte, taxaAnual, meta, extras = []) {
       labels.push(label);
       pat.push(Math.round(saldo));
       inv.push(Math.round(total));
+      dates.push(new Date(baseDate.getFullYear(), baseDate.getMonth() + meses, 1));
     }
   }
 
-  return { meses, saldo, total, labels, pat, inv };
+  return { meses, saldo, total, labels, pat, inv, dates };
 }
 
 function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
@@ -46,6 +49,8 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
   const pat = [];
   const retiradas = [];
   const labels = [];
+  const dates = [];
+  const baseDate = App.state.lastModified ? new Date(App.state.lastModified) : new Date();
 
   if (saldoInicial <= 0) {
     return {
@@ -77,6 +82,7 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
       labels.push(label);
       pat.push(Math.round(saldo));
       retiradas.push(Math.round(totalRetirado));
+      dates.push(new Date(baseDate.getFullYear(), baseDate.getMonth() + meses, 1));
     }
 
     if (reachedZero) break;
@@ -89,6 +95,7 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
     labels,
     pat,
     retiradas,
+    dates,
     esgotado: saldo <= 0,
     limitadoPeloHorizonte: saldo > 0 && meses >= App.MAX_SIMULATION_MONTHS,
   };
@@ -248,8 +255,10 @@ function calcular(options = {}) {
     };
   });
 
-  const savedScenarioSeries = allScenarioSeries.filter(item => item.scenario.visible !== false);
-  const chartLabels = App.buildChartLabels({ labels: [] }, savedScenarioSeries.map(item => item.result));
+  const chartScenarioSeries = App.state.showAllScenarios || !selectedScenario
+    ? allScenarioSeries.filter(item => item.scenario.visible !== false)
+    : allScenarioSeries.filter(item => item.scenario.id === selectedScenario.id);
+  const chartLabels = App.buildChartLabels({ labels: [] }, chartScenarioSeries.map(item => item.result));
 
   const anosC = Math.floor(accumulation.meses / 12);
   const mC = accumulation.meses % 12;
@@ -337,13 +346,16 @@ function calcular(options = {}) {
       type: 'line',
       data: {
         labels: chartLabels,
-        datasets: savedScenarioSeries.map(({ scenario, result }) => {
+        datasets: chartScenarioSeries.map(({ scenario, result }) => {
           const isSelectedSeries = scenario.id === App.state.selectedScenarioId;
           const seriesColor = App.normalizeScenarioColor(scenario.color);
+          const alignedValues = App.alignSeriesData(result.pat, chartLabels.length);
+          const alignedDates = App.alignSeriesData(result.dates, chartLabels.length);
 
           return {
             label: scenario.name,
-            data: App.alignSeriesData(result.pat, chartLabels.length),
+            data: alignedValues,
+            pointDates: alignedDates,
             borderColor: seriesColor,
             backgroundColor: isSelectedSeries ? App.hexToRgba(seriesColor, 0.16) : 'transparent',
             fill: isSelectedSeries,
@@ -370,8 +382,11 @@ function calcular(options = {}) {
             titleFont: { family: 'DM Mono', size: 11 },
             bodyFont: { family: 'DM Mono', size: 12 },
             callbacks: {
-              title: context => context[0]?.label ?? '',
-              label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
+              title: context => {
+                const pointDate = context[0]?.dataset?.pointDates?.[context[0].dataIndex];
+                return pointDate ? App.formatChartDate(pointDate) : context[0]?.label ?? '';
+              },
+              label: context => context.dataset.label + ': ' + App.fmtFull(Number(context.parsed?.y ?? context.raw ?? 0))
             }
           }
         },
@@ -440,8 +455,11 @@ function calcular(options = {}) {
           titleFont: { family: 'DM Mono', size: 11 },
           bodyFont: { family: 'DM Mono', size: 12 },
           callbacks: {
-            title: context => context[0]?.label ?? '',
-            label: context => context.dataset.label + ': R$ ' + (context.raw || 0).toLocaleString('pt-BR')
+            title: context => {
+              const pointDate = context[0]?.dataset?.pointDates?.[context[0].dataIndex];
+              return pointDate ? App.formatChartDate(pointDate) : context[0]?.label ?? '';
+            },
+            label: context => context.dataset.label + ': ' + App.fmtFull(Number(context.parsed?.y ?? context.raw ?? 0))
           }
         }
       },
