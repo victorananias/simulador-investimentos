@@ -218,7 +218,7 @@ function buildTable(currentKey) {
       <td><input class="scenario-color-input" type="color" data-scenario-color="${App.escapeHtml(scenario.id)}" value="${App.escapeHtml(App.normalizeScenarioColor(scenario.color))}" aria-label="Cor do cenário ${App.escapeHtml(scenario.name)}"></td>
       <td class="highlight">${App.fmtFull(scenario.inicial)}</td>
       <td class="highlight">${App.fmtFull(scenario.aporte)}</td>
-      <td>${scenario.taxa.toFixed(2).replace('.', ',')}% a.a.</td>
+        <td>${App.formatControlValue('juros', scenario.taxa)} a.a.</td>
       <td>${App.fmtFull(scenario.meta)}</td>
       <td class="highlight">${App.mesesParaTexto(result.meses)}</td>
       <td class="highlight">${App.fmt(rendMes)}</td>
