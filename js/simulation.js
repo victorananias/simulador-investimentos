@@ -101,6 +101,49 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
   };
 }
 
+function formatTooltipLine(context) {
+  const value = Number(context?.parsed?.y ?? context?.raw ?? 0);
+  const formattedValue = App.fmtFull(value);
+  const pointDate = context?.dataset?.pointDates?.[context?.dataIndex];
+  if (pointDate) {
+    return `${formattedValue} em ${App.formatChartDate(pointDate)}`;
+  }
+
+  return context?.label ? `${formattedValue} em ${context.label}` : formattedValue;
+}
+
+function renderHtmlTooltip(chart, tooltip, tooltipEl) {
+  if (!tooltipEl) return;
+
+  if (!tooltip || tooltip.opacity === 0) {
+    tooltipEl.style.opacity = 0;
+    tooltipEl.setAttribute('aria-hidden', 'true');
+    tooltipEl.dataset.visible = 'false';
+    return;
+  }
+
+  const dataPoint = tooltip.dataPoints?.[0];
+  const titleText = dataPoint?.dataset?.label ?? tooltip.title?.[0] ?? '';
+  const value = Number(dataPoint?.parsed?.y ?? dataPoint?.raw ?? 0);
+  const pointDate = dataPoint?.dataset?.pointDates?.[dataPoint?.dataIndex];
+  const formattedValue = App.fmtFull(value);
+  const formattedDate = pointDate ? App.formatChartDate(pointDate) : dataPoint?.label ?? '';
+
+  tooltipEl.innerHTML = `
+    <span class="chart-tooltip__title">${App.escapeHtml(titleText)}</span>
+    <div class="chart-tooltip__line"><span class="chart-tooltip__value">${App.escapeHtml(formattedValue)}</span> <span class="chart-tooltip__em">em</span> <span class="chart-tooltip__date">${App.escapeHtml(formattedDate)}</span></div>
+  `;
+
+  const canvasRect = chart.canvas.getBoundingClientRect();
+  const x = canvasRect.left + window.scrollX + tooltip.caretX;
+  const y = canvasRect.top + window.scrollY + tooltip.caretY;
+  tooltipEl.style.left = `${tooltip.caretX}px`;
+  tooltipEl.style.top = `${tooltip.caretY}px`;
+  tooltipEl.style.opacity = 1;
+  tooltipEl.setAttribute('aria-hidden', 'false');
+  tooltipEl.dataset.visible = 'true';
+}
+
 function estimarDuracaoRetiradaMeses(saldoInicial, retiradaMensal, taxaAnual) {
   if (saldoInicial <= 0) return 0;
   if (retiradaMensal <= 0) return Number.POSITIVE_INFINITY;
@@ -339,6 +382,8 @@ function calcular(options = {}) {
     : 'Sem patrimônio para projetar sugestão de retirada';
 
   const chartTheme = App.getChartThemePalette();
+  const chartTooltipEl = document.getElementById('chart-tooltip');
+  const withdrawalChartTooltipEl = document.getElementById('withdrawal-chart-tooltip');
 
   if (!shouldSkipPrimaryChartRebuild) {
     if (App.state.chartInst) App.state.chartInst.destroy();
@@ -374,20 +419,8 @@ function calcular(options = {}) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: chartTheme.tooltipBg,
-            borderColor: chartTheme.tooltipBorder,
-            borderWidth: 1,
-            titleColor: chartTheme.tooltipTitle,
-            bodyColor: chartTheme.tooltipBody,
-            titleFont: { family: 'DM Mono', size: 11 },
-            bodyFont: { family: 'DM Mono', size: 12 },
-            callbacks: {
-              title: context => {
-                const pointDate = context[0]?.dataset?.pointDates?.[context[0].dataIndex];
-                return pointDate ? App.formatChartDate(pointDate) : context[0]?.label ?? '';
-              },
-              label: context => context.dataset.label + ': ' + App.fmtFull(Number(context.parsed?.y ?? context.raw ?? 0))
-            }
+            enabled: false,
+            external: context => renderHtmlTooltip(context.chart, context.tooltip, chartTooltipEl),
           }
         },
         scales: {
@@ -447,20 +480,8 @@ function calcular(options = {}) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: chartTheme.tooltipBg,
-          borderColor: chartTheme.tooltipBorder,
-          borderWidth: 1,
-          titleColor: chartTheme.tooltipTitle,
-          bodyColor: chartTheme.tooltipBody,
-          titleFont: { family: 'DM Mono', size: 11 },
-          bodyFont: { family: 'DM Mono', size: 12 },
-          callbacks: {
-            title: context => {
-              const pointDate = context[0]?.dataset?.pointDates?.[context[0].dataIndex];
-              return pointDate ? App.formatChartDate(pointDate) : context[0]?.label ?? '';
-            },
-            label: context => context.dataset.label + ': ' + App.fmtFull(Number(context.parsed?.y ?? context.raw ?? 0))
-          }
+          enabled: false,
+          external: context => renderHtmlTooltip(context.chart, context.tooltip, withdrawalChartTooltipEl),
         }
       },
       scales: {
