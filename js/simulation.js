@@ -303,6 +303,11 @@ function calcular(options = {}) {
     : allScenarioSeries.filter(item => item.scenario.id === selectedScenario.id);
   const chartLabels = App.buildChartLabels({ labels: [] }, chartScenarioSeries.map(item => item.result));
 
+  const chartLegendDot = document.getElementById('chart-legend-dot');
+  if (chartLegendDot) {
+    chartLegendDot.style.background = selectedScenario ? App.normalizeScenarioColor(selectedScenario.color) : '#c8f060';
+  }
+
   const anosC = Math.floor(accumulation.meses / 12);
   const mC = accumulation.meses % 12;
   document.getElementById('c-tempo').textContent = anosC + ' anos' + (mC ? ' e ' + mC + ' meses' : '');

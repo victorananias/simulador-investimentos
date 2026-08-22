@@ -290,8 +290,9 @@ h1 em {
   gap: 8px;
 }
 
-.scenario-actions-group .scenario-save-btn {
+.scenario-actions-group > button {
   flex: 1;
+  height: 38px;
 }
 
 .scenario-color {
