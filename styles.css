@@ -729,6 +729,7 @@ input[type=range]::-moz-range-thumb {
 .info-modal-dialog {
   position: relative;
   width: min(760px, 100%);
+  min-width: 0;
   max-height: min(84vh, 900px);
   background: var(--bg2);
   border: 1px solid var(--border2);
@@ -781,8 +782,10 @@ input[type=range]::-moz-range-thumb {
 
 .info-modal-body {
   padding: 14px 16px 16px;
+  overflow-x: hidden;
   overflow-y: auto;
   max-height: calc(84vh - 62px);
+  min-width: 0;
 }
 
 .info-modal-body h4 {
@@ -883,7 +886,9 @@ input[type=range]::-moz-range-thumb {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow-x: auto;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
 }
 
@@ -927,16 +932,38 @@ td.highlight {
 }
 
 th:nth-child(6),
-th:nth-child(7),
-th:nth-child(8),
-th:nth-child(9),
-th:nth-child(10),
-td:nth-child(6),
-td:nth-child(7),
-td:nth-child(8),
-td:nth-child(9),
-td:nth-child(10) {
+td:nth-child(6) {
   white-space: nowrap;
+}
+
+/* Cenários salvos: em telas estreitas, esconde colunas menos essenciais
+   nesta ordem, mantendo sempre Cenário e Ações visíveis. */
+@media (max-width: 680px) {
+  #scenarios-modal th:nth-child(4),
+  #scenarios-modal td:nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  #scenarios-modal th:nth-child(2),
+  #scenarios-modal td:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 460px) {
+  #scenarios-modal th:nth-child(3),
+  #scenarios-modal td:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  #scenarios-modal th:nth-child(5),
+  #scenarios-modal td:nth-child(5) {
+    display: none;
+  }
 }
 
 tr.current-row td { color: var(--text); }
@@ -1102,5 +1129,15 @@ tr.selected-row { background: var(--accent-dim); }
 
   .info-modal-body {
     max-height: calc(90vh - 62px);
+  }
+
+  th, td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .scenario-select-btn {
+    min-width: 72px;
+    padding: 5px 8px;
   }
 }
