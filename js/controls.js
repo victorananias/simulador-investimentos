@@ -86,6 +86,16 @@ function applyTypedValue(controlId, rawValue, options = {}) {
 
   const range = document.getElementById(controlId);
   range.value = clampRangeValue(controlId, parsed, { skipStepSnap: true });
+
+  if (controlId === 'juros') {
+    const lucroRange = document.getElementById('lucro');
+    if (lucroRange) lucroRange.value = clampRangeValue('lucro', Number(range.value), { skipStepSnap: true });
+  }
+
+  if (controlId === 'aporte' || controlId === 'meta') {
+    if (App.updateAutoScenarioName) App.updateAutoScenarioName();
+  }
+
   App.touchLastModified();
   saveControlValues();
 
@@ -164,15 +174,8 @@ function setupEditableControls() {
 }
 
 function saveControlValues() {
-  const values = App.CONTROL_IDS.reduce((accumulator, controlId) => {
-    accumulator[controlId] = document.getElementById(controlId).value;
-    return accumulator;
-  }, {});
-
   try {
     localStorage.setItem(App.STORAGE_KEY, JSON.stringify({
-      controls: values,
-      extras: App.state.extrasState,
       scenarios: App.state.savedScenarios,
       selectedScenarioId: App.state.selectedScenarioId,
       lastModified: App.state.lastModified,
@@ -186,28 +189,22 @@ function touchLastModified() {
 }
 
 function restoreControlValues() {
+  // Alguns navegadores restauram valores de formulario ao recarregar a pagina;
+  // esses campos nao devem ser persistidos, entao forcamos o padrao aqui.
+  App.POST_GOAL_CONTROL_IDS.forEach(controlId => {
+    const range = document.getElementById(controlId);
+    range.value = range.defaultValue;
+  });
+
   try {
     const savedValues = localStorage.getItem(App.STORAGE_KEY);
     if (!savedValues) {
       App.state.lastModified = new Date().toISOString();
+      App.resetScenarioForm();
       return;
     }
 
     const parsedValues = JSON.parse(savedValues);
-    const controlValues = parsedValues && parsedValues.controls ? parsedValues.controls : parsedValues;
-
-    App.CONTROL_IDS.forEach(controlId => {
-      const savedValue = controlValues?.[controlId];
-      if (savedValue === undefined || savedValue === null || savedValue === '') return;
-
-      const normalized = clampRangeValue(controlId, Number(savedValue), { skipStepSnap: true });
-      if (!Number.isFinite(normalized)) return;
-      document.getElementById(controlId).value = normalized;
-    });
-
-    App.state.extrasState = Array.isArray(parsedValues?.extras)
-      ? parsedValues.extras.map(App.sanitizeExtraDraft)
-      : [];
 
     App.state.savedScenarios = Array.isArray(parsedValues?.scenarios)
       ? parsedValues.scenarios.map((scenario, index) => App.sanitizeScenarioDraft(scenario, index))
@@ -224,11 +221,21 @@ function restoreControlValues() {
     App.state.lastModified = typeof parsedValues?.lastModified === 'string'
       ? parsedValues.lastModified
       : new Date().toISOString();
+
+    const selectedScenario = App.state.selectedScenarioId
+      ? App.state.savedScenarios.find(scenario => scenario.id === App.state.selectedScenarioId)
+      : null;
+
+    if (selectedScenario) {
+      App.loadScenarioIntoForm(selectedScenario);
+    } else {
+      App.resetScenarioForm();
+    }
   } catch {
-    App.state.extrasState = [];
     App.state.savedScenarios = [];
     App.state.selectedScenarioId = null;
     App.state.lastModified = new Date().toISOString();
+    App.resetScenarioForm();
   }
 }
 

@@ -1,6 +1,22 @@
 (() => {
 const App = window.SimuladorApp;
 
+let scenarioNameAutoMode = true;
+
+function generateScenarioName(snapshot) {
+  return `${App.abbreviateAmount(snapshot.aporte)}/m - ${App.abbreviateAmount(snapshot.meta)}`;
+}
+
+function updateAutoScenarioName() {
+  if (!scenarioNameAutoMode) return;
+
+  const nameInput = document.getElementById('scenario-name');
+  nameInput.value = generateScenarioName({
+    aporte: document.getElementById('aporte').value,
+    meta: document.getElementById('meta').value,
+  });
+}
+
 function collectCurrentScenario(controlSnapshot = null) {
   const nameInput = document.getElementById('scenario-name');
   const colorInput = document.getElementById('scenario-color');
@@ -8,15 +24,12 @@ function collectCurrentScenario(controlSnapshot = null) {
 
   return {
     id: crypto.randomUUID(),
-    name: nameInput.value.trim() || `Cenario ${App.state.savedScenarios.length + 1}`,
+    name: nameInput.value.trim() || generateScenarioName(snapshot),
     color: App.normalizeScenarioColor(colorInput.value),
     inicial: Number(snapshot.inicial),
     aporte: Number(snapshot.aporte),
     taxa: Number(snapshot.juros),
     meta: Number(snapshot.meta),
-    anosRetirada: Number(snapshot.anosRetirada),
-    retirada: Number(snapshot.retirada),
-    lucro: Number(snapshot.lucro),
     visible: true,
     extras: App.state.extrasState.map(App.sanitizeExtraDraft),
     createdAt: new Date().toISOString(),
@@ -87,6 +100,37 @@ function mergeImportedScenarios(rawScenarios) {
   return { added, updated, total: importedScenarios.length };
 }
 
+function loadScenarioIntoForm(scenario) {
+  if (!scenario) return;
+
+  document.getElementById('inicial').value = App.clampRangeValue('inicial', scenario.inicial, { skipStepSnap: true });
+  document.getElementById('aporte').value = App.clampRangeValue('aporte', scenario.aporte, { skipStepSnap: true });
+  document.getElementById('juros').value = App.clampRangeValue('juros', scenario.taxa, { skipStepSnap: true });
+  document.getElementById('meta').value = App.clampRangeValue('meta', scenario.meta, { skipStepSnap: true });
+  document.getElementById('lucro').value = App.clampRangeValue('lucro', scenario.taxa, { skipStepSnap: true });
+  document.getElementById('retirada').value = App.clampRangeValue('retirada', App.computeSuggestedRetirada(scenario), { skipStepSnap: true });
+  App.state.extrasState = scenario.extras.map(App.sanitizeExtraDraft);
+  App.renderExtrasList();
+  document.getElementById('scenario-name').value = scenario.name;
+  document.getElementById('scenario-color').value = App.normalizeScenarioColor(scenario.color);
+  scenarioNameAutoMode = false;
+}
+
+function resetScenarioForm() {
+  document.getElementById('scenario-name').value = '';
+  const colorInput = document.getElementById('scenario-color');
+  colorInput.value = colorInput.defaultValue || '#4ade80';
+
+  App.SCENARIO_CONTROL_IDS.forEach(controlId => {
+    const range = document.getElementById(controlId);
+    range.value = range.defaultValue;
+  });
+
+  App.state.extrasState = [];
+  App.renderExtrasList();
+  scenarioNameAutoMode = true;
+}
+
 function setupScenarioControls() {
   const saveButton = document.getElementById('save-scenario');
   const nameInput = document.getElementById('scenario-name');
@@ -100,20 +144,15 @@ function setupScenarioControls() {
 
     if (existingIndex !== -1) {
       newScenario.id = App.state.savedScenarios[existingIndex].id;
-      if (App.state.selectedScenarioId === App.state.savedScenarios[existingIndex].id) {
-        App.state.selectedScenarioId = newScenario.id;
-      }
       App.state.savedScenarios[existingIndex] = newScenario;
     } else {
       App.state.savedScenarios.push(newScenario);
-      nameInput.value = '';
-      App.CONTROL_IDS.forEach(controlId => {
-        if (controlId === 'anosRetirada') return;
-        const range = document.getElementById(controlId);
-        range.value = range.defaultValue;
-      });
-      App.state.extrasState = [];
-      App.renderExtrasList();
+    }
+
+    App.state.selectedScenarioId = newScenario.id;
+
+    if (existingIndex === -1) {
+      resetScenarioForm();
     }
 
     App.calcular();
@@ -127,66 +166,11 @@ function setupScenarioControls() {
     saveScenario();
   });
 
-  compareBody.addEventListener('change', event => {
-    const checkbox = event.target.closest('[data-scenario-visible]');
-    const colorInput = event.target.closest('[data-scenario-color]');
-    const renameInput = event.target.closest('[data-scenario-rename]');
-
-    if (renameInput) {
-      const scenario = App.state.savedScenarios.find(item => item.id === renameInput.dataset.scenarioRename);
-      if (!scenario) return;
-
-      const nextName = renameInput.value.trim();
-      scenario.name = nextName || scenario.name;
-
-      if (App.state.selectedScenarioId === scenario.id) {
-        document.getElementById('scenario-name').value = scenario.name;
-      }
-
-      App.touchLastModified();
-      App.calcular();
-      return;
-    }
-
-    if (checkbox) {
-      const scenario = App.state.savedScenarios.find(item => item.id === checkbox.dataset.scenarioVisible);
-      if (!scenario) return;
-      scenario.visible = checkbox.checked;
-      App.calcular();
-      return;
-    }
-
-    if (colorInput) {
-      const scenario = App.state.savedScenarios.find(item => item.id === colorInput.dataset.scenarioColor);
-      if (!scenario) return;
-      scenario.color = App.normalizeScenarioColor(colorInput.value, scenario.color);
-      App.calcular();
-    }
-  });
-
-  compareBody.addEventListener('input', event => {
-    const colorInput = event.target.closest('[data-scenario-color]');
-    if (!colorInput) return;
-
-    const scenario = App.state.savedScenarios.find(item => item.id === colorInput.dataset.scenarioColor);
-    if (!scenario) return;
-    scenario.color = App.normalizeScenarioColor(colorInput.value, scenario.color);
-    App.calcular();
+  nameInput.addEventListener('input', () => {
+    scenarioNameAutoMode = nameInput.value.trim() === '';
   });
 
   compareBody.addEventListener('click', event => {
-    const deleteButton = event.target.closest('[data-scenario-delete]');
-    if (deleteButton) {
-      const scenarioId = deleteButton.dataset.scenarioDelete;
-      const index = App.state.savedScenarios.findIndex(item => item.id === scenarioId);
-      if (index === -1) return;
-
-      App.state.savedScenarios.splice(index, 1);
-      if (App.state.selectedScenarioId === scenarioId) App.state.selectedScenarioId = null;
-      App.calcular();
-      return;
-    }
-
     const selectButton = event.target.closest('[data-scenario-select]');
     if (!selectButton) return;
 
@@ -196,20 +180,14 @@ function setupScenarioControls() {
 
     if (!isDeselect) {
       const scenario = App.state.savedScenarios.find(item => item.id === scenarioId);
-      if (scenario) {
-        document.getElementById('inicial').value = App.clampRangeValue('inicial', scenario.inicial, { skipStepSnap: true });
-        document.getElementById('aporte').value = App.clampRangeValue('aporte', scenario.aporte, { skipStepSnap: true });
-        document.getElementById('juros').value = App.clampRangeValue('juros', scenario.taxa, { skipStepSnap: true });
-        document.getElementById('meta').value = App.clampRangeValue('meta', scenario.meta, { skipStepSnap: true });
-        App.state.extrasState = scenario.extras.map(App.sanitizeExtraDraft);
-        App.renderExtrasList();
-        document.getElementById('scenario-name').value = scenario.name;
-        document.getElementById('scenario-color').value = App.normalizeScenarioColor(scenario.color);
-      }
+      loadScenarioIntoForm(scenario);
+    } else {
+      resetScenarioForm();
     }
 
     App.calcular();
     App.syncDisplayValues();
+    App.closeScenariosModal();
   });
 }
 
@@ -241,6 +219,13 @@ function setupScenarioTransferControls() {
   importButton.addEventListener('click', openImportDialog);
 
   compareBody.addEventListener('click', event => {
+    const emptyAddButton = event.target.closest('[data-empty-add]');
+    if (emptyAddButton) {
+      App.closeScenariosModal();
+      App.openScenarioFormModal();
+      return;
+    }
+
     const emptyImportButton = event.target.closest('[data-empty-import]');
     if (!emptyImportButton) return;
     openImportDialog();
@@ -275,7 +260,160 @@ function setupScenarioTransferControls() {
   });
 }
 
+function openScenariosModal() {
+  const openBtn = document.getElementById('open-scenarios-modal');
+  const closeBtn = document.getElementById('scenarios-modal-close');
+  const modal = document.getElementById('scenarios-modal');
+  if (!modal) return;
+
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+  if (closeBtn) closeBtn.focus();
+}
+
+function closeScenariosModal() {
+  const openBtn = document.getElementById('open-scenarios-modal');
+  const modal = document.getElementById('scenarios-modal');
+  if (!modal) return;
+
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+  if (openBtn) openBtn.focus();
+}
+
+function setupScenariosModal() {
+  const openBtn = document.getElementById('open-scenarios-modal');
+  const closeBtn = document.getElementById('scenarios-modal-close');
+  const modal = document.getElementById('scenarios-modal');
+  const backdrop = modal ? modal.querySelector('[data-scenarios-close]') : null;
+
+  if (!openBtn || !closeBtn || !modal || !backdrop) return;
+
+  openBtn.addEventListener('click', openScenariosModal);
+  closeBtn.addEventListener('click', closeScenariosModal);
+  backdrop.addEventListener('click', closeScenariosModal);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeScenariosModal();
+    }
+  });
+}
+
+function openScenarioFormModal() {
+  const openBtn = document.getElementById('open-scenario-form');
+  const modal = document.getElementById('scenario-form-modal');
+  const nameInput = document.getElementById('scenario-name');
+  if (!modal) return;
+
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+  if (nameInput) nameInput.focus();
+}
+
+function closeScenarioFormModal() {
+  const openBtn = document.getElementById('open-scenario-form');
+  const modal = document.getElementById('scenario-form-modal');
+  if (!modal) return;
+
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+  if (openBtn) openBtn.focus();
+}
+
+function setupScenarioFormModal() {
+  const openBtn = document.getElementById('open-scenario-form');
+  const closeBtn = document.getElementById('scenario-form-close');
+  const modal = document.getElementById('scenario-form-modal');
+  const backdrop = modal ? modal.querySelector('[data-scenario-form-close]') : null;
+  const saveBtn = document.getElementById('save-scenario');
+  const cancelBtn = document.getElementById('cancel-scenario-form');
+
+  if (!openBtn || !closeBtn || !modal || !backdrop) return;
+
+  openBtn.addEventListener('click', openScenarioFormModal);
+  closeBtn.addEventListener('click', closeScenarioFormModal);
+  backdrop.addEventListener('click', closeScenarioFormModal);
+  if (saveBtn) saveBtn.addEventListener('click', closeScenarioFormModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeScenarioFormModal);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeScenarioFormModal();
+    }
+  });
+}
+
+let confirmDeleteCallback = null;
+
+function openConfirmDeleteModal(message, onConfirm) {
+  const modal = document.getElementById('confirm-delete-modal');
+  const messageEl = document.getElementById('confirm-delete-message');
+  if (!modal) return;
+
+  if (messageEl && message) messageEl.textContent = message;
+  confirmDeleteCallback = onConfirm;
+
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmDeleteModal() {
+  const modal = document.getElementById('confirm-delete-modal');
+  if (!modal) return;
+
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  confirmDeleteCallback = null;
+}
+
+function setupConfirmDeleteModal() {
+  const modal = document.getElementById('confirm-delete-modal');
+  const closeBtn = document.getElementById('confirm-delete-close');
+  const cancelBtn = document.getElementById('confirm-delete-cancel');
+  const confirmBtn = document.getElementById('confirm-delete-confirm');
+  const backdrop = modal ? modal.querySelector('[data-confirm-delete-close]') : null;
+
+  if (!modal || !closeBtn || !cancelBtn || !confirmBtn || !backdrop) return;
+
+  closeBtn.addEventListener('click', closeConfirmDeleteModal);
+  cancelBtn.addEventListener('click', closeConfirmDeleteModal);
+  backdrop.addEventListener('click', closeConfirmDeleteModal);
+
+  confirmBtn.addEventListener('click', () => {
+    const callback = confirmDeleteCallback;
+    closeConfirmDeleteModal();
+    if (callback) callback();
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) {
+      closeConfirmDeleteModal();
+    }
+  });
+}
+
 Object.assign(App, {
+  openScenariosModal,
+  closeScenariosModal,
+  openScenarioFormModal,
+  closeScenarioFormModal,
+  openConfirmDeleteModal,
+  closeConfirmDeleteModal,
+  setupConfirmDeleteModal,
+  loadScenarioIntoForm,
+  resetScenarioForm,
+  updateAutoScenarioName,
   collectCurrentScenario,
   buildScenarioExportPayload,
   downloadJsonFile,
@@ -283,5 +421,7 @@ Object.assign(App, {
   mergeImportedScenarios,
   setupScenarioControls,
   setupScenarioTransferControls,
+  setupScenariosModal,
+  setupScenarioFormModal,
 });
 })();

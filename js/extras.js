@@ -58,7 +58,7 @@ function renderExtrasList() {
             </select>
           </label>
           <label class="extra-field">
-            <span class="extra-field-label">Ano da simulacao</span>
+            <span class="extra-field-label">Ano da simulação</span>
             <input class="extra-year-input" data-extra-field="year" type="number" min="1" max="50" step="1" value="${yearValue}"${yearDisabled}>
           </label>
           <div class="extra-field extra-field-action">

@@ -18,93 +18,25 @@
 
   <div class="layout">
     <section class="panel" aria-labelledby="saved-scenarios-title">
-      <div class="section-head"><h2 id="saved-scenarios-title">Comparativo de cenários</h2></div>
-      <div class="scenario-transfer-actions" aria-label="Importação e exportação de cenários">
-        <button type="button" class="scenario-transfer-btn" id="export-scenarios">Exportar JSON</button>
-        <button type="button" class="scenario-transfer-btn" id="import-scenarios">Importar JSON</button>
+      <div class="section-head section-head-with-action">
+        <h2 id="saved-scenarios-title">Cenários</h2>
+        <button type="button" class="info-trigger" id="calc-info-open" aria-haspopup="dialog" aria-controls="calc-info-modal" aria-expanded="false" title="Como os cálculos são feitos">
+          i
+        </button>
+      </div>
+      <div class="scenario-transfer-actions" aria-label="Importação, exportação e lista de cenários">
         <input type="file" id="import-scenarios-file" accept="application/json,.json" hidden>
-      </div>
-      <div class="compare-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Cenário</th>
-              <th>Exibir</th>
-              <th>Cor</th>
-              <th>Inicial</th>
-              <th>Aporte</th>
-              <th>Taxa</th>
-              <th>Meta</th>
-              <th>Prazo</th>
-              <th>Rend./mês</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="compare-body"></tbody>
-        </table>
+        <button type="button" class="scenario-transfer-btn" id="open-scenarios-modal" aria-haspopup="dialog" aria-controls="scenarios-modal" aria-expanded="false">Ver Todos</button>
+        <button type="button" class="scenario-transfer-btn" id="open-scenario-form" aria-haspopup="dialog" aria-controls="scenario-form-modal" aria-expanded="false">Adicionar</button>
+        <button type="button" class="scenario-transfer-btn" id="export-scenarios">Exportar</button>
+        <button type="button" class="scenario-transfer-btn" id="import-scenarios">Importar</button>
       </div>
     </section>
 
-    <section class="panel parameters-panel">
-      <div class="panel-title">Parâmetros</div>
-
-      <div class="controls-inline">
-        <div class="control-group">
-          <div class="control-label">
-            <span>Capital inicial</span>
-            <input class="control-value control-value-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 0,00">
-          </div>
-          <input type="range" id="inicial" min="0" max="200000" step="0.01" value="0">
-        </div>
-
-        <div class="control-group">
-          <div class="control-label">
-            <span>Aporte mensal</span>
-            <input class="control-value control-value-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 0,00">
-          </div>
-          <input type="range" id="aporte" min="0" max="20000" step="0.01" value="0">
-        </div>
-
-        <div class="control-group">
-          <div class="control-label">
-            <span>Juros ao ano</span>
-            <input class="control-value control-value-input control-value-input-percent" id="v-juros" type="text" inputmode="decimal" aria-label="Juros ao ano" value="0,0%">
-          </div>
-          <input type="range" id="juros" min="0" max="30" step="0.01" value="0">
-        </div>
-
-        <div class="control-group" style="margin-bottom:0">
-          <div class="control-label">
-            <span>Meta</span>
-            <input class="control-value control-value-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 0,00">
-          </div>
-          <input type="range" id="meta" min="0" max="5000000" step="0.01" value="0">
-        </div>
-      </div>
-
-    </section>
-
-    <section class="panel extra-section" aria-labelledby="extra-title">
-      <div class="panel-title extra-title-row">
-        <span id="extra-title">Aportes extras</span>
-        <button type="button" class="extra-add-btn" id="add-extra">Adicionar</button>
-      </div>
-      <p class="extra-help">Escolha um mês, o valor do aporte e se ele se repete todo ano ou apenas em um ano específico da simulação. Ano 1 representa os primeiros 12 meses da simulacao.</p>
-      <div class="extra-list" id="extra-list"></div>
-    </section>
-
-    <section class="panel scenario-section" aria-labelledby="scenario-title">
-      <div class="panel-title" id="scenario-title">Salvar cenário</div>
-      <div class="scenario-form">
-        <label class="scenario-field">
-          <span class="extra-field-label">Nome</span>
-          <input class="extra-input" id="scenario-name" type="text" placeholder="Ex.: Conservador 12%">
-        </label>
-        <label class="scenario-field">
-          <span class="extra-field-label">Cor no gráfico</span>
-          <input class="scenario-color" id="scenario-color" type="color" value="#4ade80" aria-label="Cor do cenário">
-        </label>
-        <button type="button" class="scenario-save-btn" id="save-scenario">Salvar cenário</button>
+    <section class="panel" aria-labelledby="selected-scenario-title">
+      <div class="section-head"><h2 id="selected-scenario-title">Cenário selecionado</h2></div>
+      <div id="selected-scenario-content">
+        <p class="extra-help">Nenhum cenário selecionado. Abra "Cenários" e clique em "Selecionar" em um item da lista para ver os detalhes aqui.</p>
       </div>
     </section>
 
@@ -138,110 +70,106 @@
           </div>
         </div>
       </div>
+      
+      <div class="results-tabs" role="tablist" aria-label="Seções pós-meta">
+        <button type="button" class="results-tab" id="results-tab-btn-rendimento" role="tab" aria-selected="true" aria-controls="results-tab-panel-rendimento">Rendimento e evolução</button>
+        <button type="button" class="results-tab" id="results-tab-btn-patrimonio" role="tab" aria-selected="false" aria-controls="results-tab-panel-patrimonio" tabindex="-1">Patrimônio pós meta</button>
+      </div>
 
-      <!-- Rendimento pós-meta -->
-      <div>
-        <div class="section-head"><h2>Rendimento após a meta</h2></div>
-        <div class="cards-3">
-          <div class="card accent">
-            <div class="card-label">Por mês</div>
-            <div class="card-value" id="r-mes">—</div>
-            <div class="card-sub" id="r-mes-sub"></div>
+      <div class="results-tab-panel" id="results-tab-panel-rendimento" role="tabpanel" aria-labelledby="results-tab-btn-rendimento">
+        <!-- Rendimento pós-meta -->
+        <div>
+          <div class="section-head"><h2>Rendimento ao atingir a meta</h2></div>
+          <div class="cards-3">
+            <div class="card accent">
+              <div class="card-label">Por mês</div>
+              <div class="card-value" id="r-mes">—</div>
+              <div class="card-sub" id="r-mes-sub"></div>
+            </div>
+            <div class="card accent">
+              <div class="card-label">Por ano</div>
+              <div class="card-value" id="r-ano">—</div>
+              <div class="card-sub" id="r-ano-sub"></div>
+            </div>
+            <div class="card accent">
+              <div class="card-label">Por dia</div>
+              <div class="card-value" id="r-dia">—</div>
+              <div class="card-sub" id="r-dia-sub"></div>
+            </div>
           </div>
-          <div class="card accent">
-            <div class="card-label">Por ano</div>
-            <div class="card-value" id="r-ano">—</div>
-            <div class="card-sub" id="r-ano-sub"></div>
+        </div>
+
+        <!-- Gráfico de evolução -->
+        <div>
+          <div class="section-head">
+            <h2>Evolução do patrimônio</h2>
           </div>
-          <div class="card accent">
-            <div class="card-label">Por dia</div>
-            <div class="card-value" id="r-dia">—</div>
-            <div class="card-sub" id="r-dia-sub"></div>
+          <div class="chart-wrap">
+            <div class="chart-legend">
+              <span><span class="leg-dot" style="background:#c8f060"></span>Patrimônio projetado</span>
+              <span><span class="leg-dot" style="background:#3a3a44"></span>Total aportado</span>
+            </div>
+            <div class="chart-inner">
+              <canvas id="chart" role="img" aria-label="Evolução do patrimônio ao longo do tempo"></canvas>
+              <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Gráfico -->
-      <div>
-        <div class="section-head section-head-with-action">
-          <h2>Evolução do patrimônio</h2>
-          <button type="button" class="info-trigger" id="calc-info-open" aria-haspopup="dialog" aria-controls="calc-info-modal" aria-expanded="false" title="Como os cálculos são feitos">
-            i
-          </button>
-          <label class="chart-filter-toggle" for="chart-show-all">
-            <input type="checkbox" id="chart-show-all">
-            <span>Mostrar todos os cenários</span>
-          </label>
-        </div>
-        <div class="chart-wrap">
-          <div class="chart-legend">
-            <span><span class="leg-dot" style="background:#c8f060"></span>Patrimônio projetado</span>
-            <span><span class="leg-dot" style="background:#3a3a44"></span>Total aportado</span>
-          </div>
-          <div class="chart-inner">
-            <canvas id="chart" role="img" aria-label="Evolução do patrimônio ao longo do tempo"></canvas>
-            <div class="chart-tooltip" id="chart-tooltip" aria-hidden="true"></div>
-          </div>
-        </div>
-      </div>
+      <div class="results-tab-panel" id="results-tab-panel-patrimonio" role="tabpanel" aria-labelledby="results-tab-btn-patrimonio" hidden>
+        <div>
+          <div class="section-head"><h2>Patrimônio pós meta</h2></div>
+          <div class="scenario-params-grid">
+            <label class="scenario-field">
+              <span class="extra-field-label">Meta de duração</span>
+              <input class="extra-input" id="v-anos-retirada" type="text" inputmode="numeric" aria-label="Duração da retirada em anos" value="50" autocomplete="off">
+              <input type="range" id="anosRetirada" min="1" max="10000" step="1" value="50" autocomplete="off">
+            </label>
 
-      <div>
-        <div class="section-head"><h2>Patrimônio pós meta</h2></div>
-        <div class="withdrawal-inputs" aria-label="Controles da fase de retirada">
-          <div class="control-group">
-            <div class="control-label">
-              <span>Meta de duração</span>
-              <input class="control-value control-value-input control-value-input-years" id="v-anos-retirada" type="text" inputmode="numeric" aria-label="Duração da retirada em anos" value="20">
-            </div>
-            <input type="range" id="anosRetirada" min="1" max="10000" step="1" value="20">
-          </div>
+            <label class="scenario-field">
+              <span class="extra-field-label">Retirada mensal</span>
+              <input class="extra-input" id="v-retirada" type="text" inputmode="decimal" aria-label="Retirada mensal" value="R$ 0,00" autocomplete="off">
+              <input type="range" id="retirada" min="0" max="100000" step="0.01" value="0" autocomplete="off">
+            </label>
 
-          <div class="control-group">
-            <div class="control-label">
-              <span>Retirada mensal</span>
-              <input class="control-value control-value-input" id="v-retirada" type="text" inputmode="decimal" aria-label="Retirada mensal" value="R$ 0,00">
+            <label class="scenario-field">
+              <span class="extra-field-label">Rendimento anual após a meta</span>
+              <input class="extra-input" id="v-lucro" type="text" inputmode="decimal" aria-label="Rendimento anual após a meta" value="0,0%" autocomplete="off">
+              <input type="range" id="lucro" min="0" max="30" step="0.01" value="0" autocomplete="off">
+            </label>
+          </div>
+          <div class="cards-3 withdrawal-cards">
+            <div class="card accent">
+              <div class="card-label">Duração estimada</div>
+              <div class="card-value" id="w-tempo">—</div>
+              <div class="card-sub" id="w-tempo-sub"></div>
             </div>
-            <input type="range" id="retirada" min="0" max="100000" step="0.01" value="0">
-          </div>
-
-          <div class="control-group" style="margin-bottom:0">
-            <div class="control-label">
-              <span>Lucro anual após a meta</span>
-              <input class="control-value control-value-input control-value-input-percent" id="v-lucro" type="text" inputmode="decimal" aria-label="Lucro anual após a meta" value="0,0%">
+            <div class="card accent">
+              <div class="card-label">Sugestão de retirada/mês</div>
+              <div class="card-value" id="w-sugestao">—</div>
+              <div class="card-sub" id="w-sugestao-sub"></div>
             </div>
-            <input type="range" id="lucro" min="0" max="30" step="0.01" value="0">
+            <div class="card accent">
+              <div class="card-label">Total retirado</div>
+              <div class="card-value" id="w-total">—</div>
+              <div class="card-sub" id="w-total-sub"></div>
+            </div>
+            <div class="card accent">
+              <div class="card-label">Saldo projetado</div>
+              <div class="card-value" id="w-saldo">—</div>
+              <div class="card-sub" id="w-saldo-sub"></div>
+            </div>
           </div>
-        </div>
-        <div class="cards-3 withdrawal-cards">
-          <div class="card accent">
-            <div class="card-label">Duração estimada</div>
-            <div class="card-value" id="w-tempo">—</div>
-            <div class="card-sub" id="w-tempo-sub"></div>
-          </div>
-          <div class="card accent">
-            <div class="card-label">Total retirado</div>
-            <div class="card-value" id="w-total">—</div>
-            <div class="card-sub" id="w-total-sub"></div>
-          </div>
-          <div class="card accent">
-            <div class="card-label">Saldo projetado</div>
-            <div class="card-value" id="w-saldo">—</div>
-            <div class="card-sub" id="w-saldo-sub"></div>
-          </div>
-          <div class="card accent">
-            <div class="card-label">Sugestão de retirada/mês</div>
-            <div class="card-value" id="w-sugestao">—</div>
-            <div class="card-sub" id="w-sugestao-sub"></div>
-          </div>
-        </div>
-        <div class="chart-wrap chart-wrap-secondary">
-          <div class="chart-legend">
-            <span><span class="leg-dot" style="background:#fbbf24"></span>Patrimônio restante</span>
-            <span><span class="leg-dot" style="background:#4ade80"></span>Total retirado</span>
-          </div>
-          <div class="chart-inner">
-            <canvas id="withdrawal-chart" role="img" aria-label="Evolução do patrimônio após atingir a meta e iniciar retiradas"></canvas>
-            <div class="chart-tooltip" id="withdrawal-chart-tooltip" aria-hidden="true"></div>
+          <div class="chart-wrap chart-wrap-secondary">
+            <div class="chart-legend">
+              <span><span class="leg-dot" style="background:#fbbf24"></span>Patrimônio restante</span>
+              <span><span class="leg-dot" style="background:#4ade80"></span>Total retirado</span>
+            </div>
+            <div class="chart-inner">
+              <canvas id="withdrawal-chart" role="img" aria-label="Evolução do patrimônio após atingir a meta e iniciar retiradas"></canvas>
+              <div class="chart-tooltip" id="withdrawal-chart-tooltip" aria-hidden="true"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -266,6 +194,114 @@
   </div>
 </div>
 
+<div class="info-modal" id="scenarios-modal" hidden aria-hidden="true">
+  <div class="info-modal-backdrop" data-scenarios-close></div>
+  <div class="info-modal-dialog info-modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="scenarios-modal-title">
+    <div class="info-modal-head">
+      <h3 id="scenarios-modal-title">Cenários salvos</h3>
+      <button type="button" class="info-modal-close" id="scenarios-modal-close" aria-label="Fechar lista de cenários">Fechar</button>
+    </div>
+    <div class="info-modal-body">
+      <div class="compare-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Inicial</th>
+              <th>Aporte</th>
+              <th>Rendimento anual</th>
+              <th>Meta</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal" id="scenario-form-modal" hidden aria-hidden="true">
+  <div class="info-modal-backdrop" data-scenario-form-close></div>
+  <div class="info-modal-dialog info-modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="scenario-form-title">
+    <div class="info-modal-head">
+      <h3 id="scenario-form-title">Cenário</h3>
+      <button type="button" class="info-modal-close" id="scenario-form-close" aria-label="Fechar formulário de cenário">Fechar</button>
+    </div>
+    <div class="info-modal-body">
+      <div class="panel-title">Parâmetros</div>
+      <div class="scenario-params-grid">
+        <label class="scenario-field">
+          <span class="extra-field-label">Capital inicial</span>
+          <input class="extra-input" id="v-inicial" type="text" inputmode="decimal" aria-label="Capital inicial" value="R$ 0,00" autocomplete="off">
+          <input type="range" id="inicial" min="0" max="200000" step="0.01" value="0" autocomplete="off">
+        </label>
+
+        <label class="scenario-field">
+          <span class="extra-field-label">Aporte mensal</span>
+          <input class="extra-input" id="v-aporte" type="text" inputmode="decimal" aria-label="Aporte mensal" value="R$ 0,00" autocomplete="off">
+          <input type="range" id="aporte" min="0" max="20000" step="0.01" value="0" autocomplete="off">
+        </label>
+
+        <label class="scenario-field">
+          <span class="extra-field-label">Rendimento Anual</span>
+          <input class="extra-input" id="v-juros" type="text" inputmode="decimal" aria-label="Rendimento Anual" value="0,0%" autocomplete="off">
+          <input type="range" id="juros" min="0" max="30" step="0.01" value="0" autocomplete="off">
+        </label>
+
+        <label class="scenario-field">
+          <span class="extra-field-label">Meta</span>
+          <input class="extra-input" id="v-meta" type="text" inputmode="decimal" aria-label="Meta" value="R$ 0,00" autocomplete="off">
+          <input type="range" id="meta" min="0" max="5000000" step="0.01" value="0" autocomplete="off">
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <div class="panel-title extra-title-row">
+        <span id="extra-title">Aportes extras</span>
+        <button type="button" class="extra-add-btn" id="add-extra">Adicionar</button>
+      </div>
+      <p class="extra-help">Escolha um mês, o valor do aporte e se ele se repete todo ano ou apenas em um ano específico da simulação. Ano 1 representa os primeiros 12 meses da simulação.</p>
+      <div class="extra-list" id="extra-list"></div>
+
+      <hr class="divider">
+
+      <div class="scenario-form">
+        <label class="scenario-field">
+          <span class="extra-field-label">Nome</span>
+          <input class="extra-input" id="scenario-name" type="text" placeholder="Ex.: Conservador 12%">
+        </label>
+        <label class="scenario-field">
+          <span class="extra-field-label">Cor no gráfico</span>
+          <input class="scenario-color" id="scenario-color" type="color" value="#4ade80" aria-label="Cor do cenário">
+        </label>
+        <div class="scenario-actions-group">
+          <button type="button" class="scenario-save-btn" id="save-scenario">Salvar cenário</button>
+          <button type="button" class="scenario-cancel-btn" id="cancel-scenario-form">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal" id="confirm-delete-modal" hidden aria-hidden="true">
+  <div class="info-modal-backdrop" data-confirm-delete-close></div>
+  <div class="info-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-title">
+    <div class="info-modal-head">
+      <h3 id="confirm-delete-title">Excluir cenário</h3>
+      <button type="button" class="info-modal-close" id="confirm-delete-close" aria-label="Cancelar exclusão">Fechar</button>
+    </div>
+    <div class="info-modal-body">
+      <p id="confirm-delete-message">Tem certeza que deseja excluir este cenário? Essa ação não pode ser desfeita.</p>
+      <div class="scenario-actions-group">
+        <button type="button" class="scenario-delete-btn" id="confirm-delete-confirm">Excluir</button>
+        <button type="button" class="scenario-cancel-btn" id="confirm-delete-cancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="info-modal" id="calc-info-modal" hidden aria-hidden="true">
   <div class="info-modal-backdrop" data-info-close></div>
   <div class="info-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="calc-info-title">
@@ -276,6 +312,9 @@
     <div class="info-modal-body">
       <p>
         O simulador usa capitalização mensal. Primeiro converte taxas anuais em taxa mensal e depois aplica juros compostos mês a mês.
+      </p>
+      <p>
+        Os resultados de Acumulação, Rendimento e o gráfico só aparecem quando um cenário está selecionado. Sem seleção, esses valores ficam zerados — use "Adicionar" ou "Ver Todos" para escolher um cenário.
       </p>
       <h4>Evolução do patrimônio</h4>
       <h4>1) Conversão de taxa</h4>
@@ -290,7 +329,10 @@
         O total aportado soma o inicial + todos os aportes mensais + aportes extras.
       </p>
       <h4>Pós-meta</h4>
-      <h4>3) Rendimento após a meta</h4>
+      <p>
+        Os campos abaixo (Meta de duração, Retirada mensal, Rendimento anual após a meta) ficam na aba "Patrimônio pós meta" e funcionam de forma independente do cenário selecionado — não são salvos junto com o cenário.
+      </p>
+      <h4>3) Rendimento ao atingir a meta</h4>
       <p>
         por_mes = patrimonio_na_meta x taxa_mensal_da_acumulacao
       </p>
@@ -313,7 +355,20 @@
       <p>
         A projeção vai ate 50 anos ou para quando o saldo zera, o que acontecer primeiro.
       </p>
-      <h4>5) Sugestão de retirada/mês</h4>
+      <h4>5) Duração estimada da retirada</h4>
+      <p>
+        Além da simulação mês a mês, a duração exibida no card é calculada analiticamente:
+      </p>
+      <p>
+        razao = (patrimonio_na_meta x taxa_mensal_pos_meta) / retirada_mensal
+      </p>
+      <p>
+        meses = -ln(1 - razao) / ln(1 + taxa_mensal_pos_meta)
+      </p>
+      <p>
+        Se a retirada mensal for menor ou igual ao rendimento mensal do saldo, o patrimônio nunca zera nesse modelo.
+      </p>
+      <h4>6) Sugestão de retirada/mês</h4>
       <p>
         meses_planejados = anos_retirada x 12
       </p>
@@ -324,7 +379,7 @@
         se taxa_mensal_pos_meta > 0: sugestao_retirada = patrimonio_na_meta x taxa_mensal_pos_meta / (1 - (1 + taxa_mensal_pos_meta)^(-meses_planejados))
       </p>
       <p>
-        Nesse modelo, a sugestão considera o lucro pós-meta continuando ao longo do período e busca zerar o saldo no fim do prazo escolhido.
+        Nesse modelo, a sugestão considera o rendimento pós-meta continuando ao longo do período e busca zerar o saldo no fim do prazo escolhido. Esse valor é usado automaticamente para preencher "Retirada mensal" ao selecionar um cenário.
       </p>
     </div>
   </div>

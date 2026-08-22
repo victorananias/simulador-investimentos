@@ -84,14 +84,28 @@ function setupCalculationInfo() {
   });
 }
 
-function setupChartVisibilityToggle() {
-  const checkbox = document.getElementById('chart-show-all');
-  if (!checkbox) return;
+function setupResultsTabs() {
+  const tabs = [
+    { btn: document.getElementById('results-tab-btn-rendimento'), panel: document.getElementById('results-tab-panel-rendimento') },
+    { btn: document.getElementById('results-tab-btn-patrimonio'), panel: document.getElementById('results-tab-panel-patrimonio') },
+  ];
 
-  checkbox.checked = App.state.showAllScenarios;
-  checkbox.addEventListener('change', () => {
-    App.state.showAllScenarios = checkbox.checked;
-    App.calcular();
+  if (tabs.some(tab => !tab.btn || !tab.panel)) return;
+
+  function activateTab(activeTab) {
+    tabs.forEach(tab => {
+      const isActive = tab === activeTab;
+      tab.btn.setAttribute('aria-selected', String(isActive));
+      tab.btn.tabIndex = isActive ? 0 : -1;
+      tab.panel.hidden = !isActive;
+    });
+
+    if (App.state.chartInst) App.state.chartInst.resize();
+    if (App.state.withdrawalChartInst) App.state.withdrawalChartInst.resize();
+  }
+
+  tabs.forEach(tab => {
+    tab.btn.addEventListener('click', () => activateTab(tab));
   });
 }
 
@@ -106,20 +120,22 @@ function init() {
 
   App.setupEditableControls();
   App.restoreControlValues();
+  document.getElementById('lucro').value = App.clampRangeValue('lucro', Number(document.getElementById('juros').value), { skipStepSnap: true });
   document.getElementById('v-anos-retirada').value = Math.max(1, Math.round(Number(document.getElementById('anosRetirada').value) || 1)) + ' anos';
-  App.renderExtrasList();
   App.setupExtraControls();
   App.setupScenarioControls();
   App.setupScenarioTransferControls();
+  App.setupScenariosModal();
+  App.setupScenarioFormModal();
+  App.setupConfirmDeleteModal();
   App.setupCalculationInfo();
-  setupChartVisibilityToggle();
+  setupResultsTabs();
   App.calcular();
   setupTheme();
 }
 
 Object.assign(App, {
   setupCalculationInfo,
-  setupChartVisibilityToggle,
 });
 
 init();

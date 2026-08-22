@@ -12,6 +12,8 @@ const CONTROL_CONFIG = {
 };
 
 const CONTROL_IDS = Object.keys(CONTROL_CONFIG);
+const SCENARIO_CONTROL_IDS = ['inicial', 'aporte', 'juros', 'meta'];
+const POST_GOAL_CONTROL_IDS = ['anosRetirada', 'retirada', 'lucro'];
 const STORAGE_KEY = 'simulador-investimentos:parametros';
 const MAX_SIMULATION_MONTHS = 600;
 const SCENARIO_EXPORT_VERSION = 1;
@@ -32,6 +34,8 @@ const EXTRA_MONTHS = [
 
 App.CONTROL_CONFIG = CONTROL_CONFIG;
 App.CONTROL_IDS = CONTROL_IDS;
+App.SCENARIO_CONTROL_IDS = SCENARIO_CONTROL_IDS;
+App.POST_GOAL_CONTROL_IDS = POST_GOAL_CONTROL_IDS;
 App.STORAGE_KEY = STORAGE_KEY;
 App.MAX_SIMULATION_MONTHS = MAX_SIMULATION_MONTHS;
 App.SCENARIO_EXPORT_VERSION = SCENARIO_EXPORT_VERSION;
@@ -42,7 +46,6 @@ App.state = {
   extrasState: [],
   savedScenarios: [],
   selectedScenarioId: null,
-  showAllScenarios: false,
   lastModified: null,
 };
 
@@ -61,6 +64,24 @@ function fmt(value) {
   if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(2).replace('.', ',') + ' M';
   if (value >= 1000) return 'R$ ' + (value / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' mil';
   return fmtFull(value);
+}
+
+function abbreviateAmount(value) {
+  const abs = Math.abs(Number(value) || 0);
+
+  if (abs >= 1000000) {
+    const millions = Math.floor(abs / 1000000);
+    const thousands = Math.round((abs % 1000000) / 1000);
+    return thousands > 0 ? `${millions}M ${thousands} mil` : `${millions}M`;
+  }
+
+  if (abs >= 1000) {
+    const thousands = Math.round((abs / 1000) * 10) / 10;
+    const formatted = Number.isInteger(thousands) ? String(thousands) : thousands.toFixed(1).replace('.', ',');
+    return `${formatted} mil`;
+  }
+
+  return String(Math.round(abs));
 }
 
 function normalizeScenarioColor(color, fallback = '#4ade80') {
@@ -121,9 +142,6 @@ function sanitizeScenarioDraft(scenario = {}, fallbackIndex = 0) {
     aporte: Number.isFinite(Number(scenario.aporte)) ? Number(scenario.aporte) : 0,
     taxa: Number.isFinite(Number(scenario.taxa)) ? Number(scenario.taxa) : 0,
     meta: Number.isFinite(Number(scenario.meta)) ? Number(scenario.meta) : 0,
-    anosRetirada: Number.isFinite(Number(scenario.anosRetirada)) ? Number(scenario.anosRetirada) : 20,
-    retirada: Number.isFinite(Number(scenario.retirada)) ? Number(scenario.retirada) : 0,
-    lucro: Number.isFinite(Number(scenario.lucro)) ? Number(scenario.lucro) : 0,
     visible: scenario.visible !== false,
     extras,
     createdAt: typeof scenario.createdAt === 'string' ? scenario.createdAt : new Date().toISOString(),
@@ -220,6 +238,7 @@ Object.assign(App, {
   hasFraction,
   fmtFull,
   fmt,
+  abbreviateAmount,
   normalizeScenarioColor,
   hexToRgba,
   createDefaultExtra,

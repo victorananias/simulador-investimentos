@@ -166,6 +166,36 @@ function estimarDuracaoRetiradaMeses(saldoInicial, retiradaMensal, taxaAnual) {
   return Number.isFinite(meses) && meses > 0 ? meses : Number.POSITIVE_INFINITY;
 }
 
+function computeSuggestedRetirada(scenario) {
+  const extras = scenario.extras
+    .map(App.sanitizeExtraDraft)
+    .map(extra => ({
+      month: Number(extra.month),
+      amount: App.normalizeNumberInput(extra.amount) || 0,
+      recurrence: extra.recurrence,
+      year: extra.recurrence === 'specific' ? Number(extra.year) : null,
+    }))
+    .filter(extra => extra.amount > 0);
+
+  const result = simular(scenario.inicial, scenario.aporte, scenario.taxa / 100, scenario.meta, extras);
+  if (result.saldo <= 0) return 0;
+
+  const anosRetiradaAtivo = Math.max(1, Math.round(Number(document.getElementById('anosRetirada').value) || 1));
+  const lucroAnualAtivo = scenario.taxa / 100;
+  const taxaMensalPosMeta = Math.pow(1 + lucroAnualAtivo, 1 / 12) - 1;
+  const mesesPlanejadosRetirada = Math.max(1, anosRetiradaAtivo * 12);
+
+  let sugestao;
+  if (Math.abs(taxaMensalPosMeta) < 1e-9) {
+    sugestao = result.saldo / mesesPlanejadosRetirada;
+  } else {
+    const denominator = 1 - Math.pow(1 + taxaMensalPosMeta, -mesesPlanejadosRetirada);
+    sugestao = denominator > 0 ? (result.saldo * taxaMensalPosMeta) / denominator : result.saldo / mesesPlanejadosRetirada;
+  }
+
+  return Math.max(0, sugestao);
+}
+
 function buildTable(currentKey) {
   const tbody = document.getElementById('compare-body');
   tbody.innerHTML = '';
@@ -173,10 +203,13 @@ function buildTable(currentKey) {
   if (!App.state.savedScenarios.length) {
     tbody.innerHTML = `
       <tr>
-        <td class="scenario-empty" colspan="10">
+        <td class="scenario-empty" colspan="6">
           <div class="scenario-empty-state">
             <span>Nenhum cenário salvo ainda.</span>
-            <button type="button" class="scenario-transfer-btn scenario-empty-import-btn" data-empty-import>Importar JSON</button>
+            <div class="scenario-empty-actions">
+              <button type="button" class="scenario-transfer-btn scenario-empty-add-btn" data-empty-add>Adicionar</button>
+              <button type="button" class="scenario-transfer-btn scenario-empty-import-btn" data-empty-import>Importar</button>
+            </div>
           </div>
         </td>
       </tr>
@@ -185,19 +218,6 @@ function buildTable(currentKey) {
   }
 
   App.state.savedScenarios.forEach(scenario => {
-    const extras = scenario.extras
-      .map(App.sanitizeExtraDraft)
-      .map(extra => ({
-        month: Number(extra.month),
-        amount: App.normalizeNumberInput(extra.amount) || 0,
-        recurrence: extra.recurrence,
-        year: extra.recurrence === 'specific' ? Number(extra.year) : null,
-      }))
-      .filter(extra => extra.amount > 0);
-
-    const result = simular(scenario.inicial, scenario.aporte, scenario.taxa / 100, scenario.meta, extras);
-    const taxaMensalPosMeta = Math.pow(1 + scenario.lucro / 100, 1 / 12) - 1;
-    const rendMes = result.saldo * taxaMensalPosMeta;
     const row = document.createElement('tr');
     const isSelected = scenario.id === App.state.selectedScenarioId;
 
@@ -205,28 +225,13 @@ function buildTable(currentKey) {
     if (isSelected) row.className = 'selected-row';
 
     row.innerHTML = `
-      <td>
-        <input
-          class="scenario-name-input"
-          type="text"
-          data-scenario-rename="${App.escapeHtml(scenario.id)}"
-          value="${App.escapeHtml(scenario.name)}"
-          aria-label="Renomear cenário ${App.escapeHtml(scenario.name)}"
-        >
-      </td>
-      <td><input class="scenario-visible-check" type="checkbox" data-scenario-visible="${App.escapeHtml(scenario.id)}"${scenario.visible === false ? '' : ' checked'}></td>
-      <td><input class="scenario-color-input" type="color" data-scenario-color="${App.escapeHtml(scenario.id)}" value="${App.escapeHtml(App.normalizeScenarioColor(scenario.color))}" aria-label="Cor do cenário ${App.escapeHtml(scenario.name)}"></td>
+      <td>${App.escapeHtml(scenario.name)}</td>
       <td class="highlight">${App.fmtFull(scenario.inicial)}</td>
       <td class="highlight">${App.fmtFull(scenario.aporte)}</td>
       <td>${scenario.taxa.toFixed(2).replace('.', ',')}% a.a.</td>
       <td>${App.fmtFull(scenario.meta)}</td>
-      <td class="highlight">${App.mesesParaTexto(result.meses)}</td>
-      <td class="highlight">${App.fmt(rendMes)}</td>
       <td>
-        <div class="scenario-actions">
-          <button type="button" class="scenario-select-btn${isSelected ? ' scenario-select-btn--active' : ''}" data-scenario-select="${App.escapeHtml(scenario.id)}">${isSelected ? 'Selecionado' : 'Selecionar'}</button>
-          <button type="button" class="scenario-delete-btn" data-scenario-delete="${App.escapeHtml(scenario.id)}">Excluir</button>
-        </div>
+        <button type="button" class="scenario-select-btn${isSelected ? ' scenario-select-btn--active' : ''}" data-scenario-select="${App.escapeHtml(scenario.id)}">${isSelected ? 'Selecionado' : 'Selecionar'}</button>
       </td>
     `;
 
@@ -243,14 +248,9 @@ function calcular(options = {}) {
     ? App.state.savedScenarios.find(scenario => scenario.id === App.state.selectedScenarioId)
     : null;
 
-  const inicial = Number(document.getElementById('inicial').value);
-  const aporte = Number(document.getElementById('aporte').value);
-  const taxaAnual = Number(document.getElementById('juros').value) / 100;
-  const meta = Number(document.getElementById('meta').value);
   const anosRetirada = Number(document.getElementById('anosRetirada').value);
   const retirada = Number(document.getElementById('retirada').value);
   const lucro = Number(document.getElementById('lucro').value);
-  const extras = App.getActiveExtras();
 
   App.saveControlValues();
   App.syncDisplayValues();
@@ -271,10 +271,10 @@ function calcular(options = {}) {
           }))
           .filter(extra => extra.amount > 0)
       )
-    : simular(inicial, aporte, taxaAnual, meta, extras);
+    : simular(0, 0, 0, 0, []);
 
   // Rendimento apos a meta segue a mesma taxa definida na fase de acumulacao.
-  const taxaAnualRendimento = selectedScenario ? selectedScenario.taxa / 100 : taxaAnual;
+  const taxaAnualRendimento = selectedScenario ? selectedScenario.taxa / 100 : 0;
 
   const anosRetiradaAtivo = Math.max(1, Math.round(anosRetirada));
   const retiradaMensalAtiva = retirada;
@@ -298,7 +298,7 @@ function calcular(options = {}) {
     };
   });
 
-  const chartScenarioSeries = App.state.showAllScenarios || !selectedScenario
+  const chartScenarioSeries = !selectedScenario
     ? allScenarioSeries.filter(item => item.scenario.visible !== false)
     : allScenarioSeries.filter(item => item.scenario.id === selectedScenario.id);
   const chartLabels = App.buildChartLabels({ labels: [] }, chartScenarioSeries.map(item => item.result));
@@ -378,7 +378,7 @@ function calcular(options = {}) {
     : App.fmtFull(Math.round(retiradaProjection.saldo));
   document.getElementById('w-sugestao').textContent = App.fmtFull(sugestaoRetiradaMensal);
   document.getElementById('w-sugestao-sub').textContent = sugestaoRetiradaMensal > 0
-    ? App.fmtFull(sugestaoRetiradaMensal) + '/mês considerando lucro pós-meta por ' + anosRetiradaAtivo + ' anos'
+    ? App.fmtFull(sugestaoRetiradaMensal) + '/mês considerando rendimento pós-meta por ' + anosRetiradaAtivo + ' anos'
     : 'Sem patrimônio para projetar sugestão de retirada';
 
   const chartTheme = App.getChartThemePalette();
@@ -504,12 +504,118 @@ function calcular(options = {}) {
   });
 
   buildTable(null);
+  renderSelectedScenarioPanel();
+}
+
+function renderSelectedScenarioPanel() {
+  const container = document.getElementById('selected-scenario-content');
+  if (!container) return;
+
+  const scenario = App.state.savedScenarios.find(item => item.id === App.state.selectedScenarioId);
+
+  if (!scenario) {
+    container.innerHTML = '<p class="extra-help">Nenhum cenário selecionado. Abra "Cenários" e clique em "Selecionar" em um item da lista para ver os detalhes aqui.</p>';
+    return;
+  }
+
+  const activeExtras = scenario.extras
+    .map(App.sanitizeExtraDraft)
+    .filter(extra => (App.normalizeNumberInput(extra.amount) || 0) > 0);
+
+  const extrasHtml = activeExtras.length
+    ? `
+      <div class="compare-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Valor</th>
+              <th>Recorrência</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activeExtras.map(extra => `
+              <tr>
+                <td>${App.escapeHtml(App.EXTRA_MONTHS[extra.month - 1] || extra.month)}</td>
+                <td>${App.fmtFull(App.normalizeNumberInput(extra.amount) || 0)}</td>
+                <td>${extra.recurrence === 'specific' ? `Ano ${App.escapeHtml(extra.year)}` : 'Todo ano'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+    : '<div class="extra-empty">Nenhum aporte extra configurado.</div>';
+
+  container.innerHTML = `
+    <div class="selected-scenario-header">
+      <span class="scenario-dot" style="background:${App.escapeHtml(App.normalizeScenarioColor(scenario.color))}"></span>
+      <span class="selected-scenario-name">${App.escapeHtml(scenario.name)}</span>
+      <div class="selected-scenario-header-actions">
+        <button type="button" class="scenario-transfer-btn" id="edit-selected-scenario">Editar</button>
+        <button type="button" class="scenario-delete-btn" id="delete-selected-scenario">Excluir</button>
+      </div>
+    </div>
+
+    <div class="panel-title">Parâmetros</div>
+    <div class="selected-scenario-params">
+      <div class="selected-scenario-param">
+        <span class="selected-scenario-param-label">Capital inicial</span>
+        <span class="selected-scenario-param-value">${App.fmtFull(scenario.inicial)}</span>
+      </div>
+      <div class="selected-scenario-param">
+        <span class="selected-scenario-param-label">Aporte mensal</span>
+        <span class="selected-scenario-param-value">${App.fmtFull(scenario.aporte)}</span>
+      </div>
+      <div class="selected-scenario-param">
+        <span class="selected-scenario-param-label">Rendimento Anual</span>
+        <span class="selected-scenario-param-value">${scenario.taxa.toFixed(2).replace('.', ',')}%</span>
+      </div>
+      <div class="selected-scenario-param">
+        <span class="selected-scenario-param-label">Meta</span>
+        <span class="selected-scenario-param-value">${App.fmtFull(scenario.meta)}</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="panel-title">Aportes extras</div>
+    ${extrasHtml}
+  `;
+
+  const editBtn = document.getElementById('edit-selected-scenario');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      App.loadScenarioIntoForm(scenario);
+      App.calcular();
+      App.syncDisplayValues();
+      App.openScenarioFormModal();
+    });
+  }
+
+  const deleteBtn = document.getElementById('delete-selected-scenario');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      App.openConfirmDeleteModal(`Tem certeza que deseja excluir o cenário "${scenario.name}"? Essa ação não pode ser desfeita.`, () => {
+        const index = App.state.savedScenarios.findIndex(item => item.id === scenario.id);
+        if (index === -1) return;
+
+        App.state.savedScenarios.splice(index, 1);
+        App.state.selectedScenarioId = null;
+        App.resetScenarioForm();
+        App.calcular();
+        App.syncDisplayValues();
+      });
+    });
+  }
 }
 
 Object.assign(App, {
   simular,
   simularRetirada,
   estimarDuracaoRetiradaMeses,
+  computeSuggestedRetirada,
+  renderSelectedScenarioPanel,
   buildTable,
   calcular,
 });
