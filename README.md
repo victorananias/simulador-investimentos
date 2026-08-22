@@ -30,7 +30,7 @@ Reúne tudo que define um cenário:
 
 - **Parâmetros** — capital inicial, aporte mensal, rendimento anual, meta
 - **Aportes extras** — valores pontuais em meses específicos, recorrentes todo ano ou em um ano específico da simulação
-- **Nome** — se deixado em branco, é gerado automaticamente como `{aporte}/m - {meta}` (ex.: `2,3 mil/m - 100 mil`) e continua se atualizando enquanto você ajusta aporte/meta, até que você digite um nome manualmente
+- **Nome** — se deixado em branco, é gerado automaticamente como `{aporte}/mês - {meta}` (ex.: `2,3 mil/mês - 100 mil`) e continua se atualizando enquanto você ajusta aporte/meta, até que você digite um nome manualmente
 - **Cor** — usada no gráfico
 - **Salvar cenário** — cria um novo cenário ou atualiza um existente (por nome) e o seleciona automaticamente
 - **Cancelar** — fecha sem salvar

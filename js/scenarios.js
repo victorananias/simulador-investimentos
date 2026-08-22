@@ -4,7 +4,7 @@ const App = window.SimuladorApp;
 let scenarioNameAutoMode = true;
 
 function generateScenarioName(snapshot) {
-  return `${App.abbreviateAmount(snapshot.aporte)}/m - ${App.abbreviateAmount(snapshot.meta)}`;
+  return `${App.abbreviateAmount(snapshot.aporte)}/mês - ${App.abbreviateAmount(snapshot.meta)}`;
 }
 
 function updateAutoScenarioName() {
