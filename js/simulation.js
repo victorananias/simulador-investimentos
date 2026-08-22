@@ -9,8 +9,6 @@ function simular(inicial, aporte, taxaAnual, meta, extras = []) {
   const pat = [];
   const inv = [];
   const labels = [];
-  const dates = [];
-  const baseDate = App.state.lastModified ? new Date(App.state.lastModified) : new Date();
 
   while (saldo < meta && meses < App.MAX_SIMULATION_MONTHS) {
     meses++;
@@ -34,11 +32,10 @@ function simular(inicial, aporte, taxaAnual, meta, extras = []) {
       labels.push(label);
       pat.push(Math.round(saldo));
       inv.push(Math.round(total));
-      dates.push(new Date(baseDate.getFullYear(), baseDate.getMonth() + meses, 1));
     }
   }
 
-  return { meses, saldo, total, labels, pat, inv, dates };
+  return { meses, saldo, total, labels, pat, inv };
 }
 
 function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
@@ -49,8 +46,6 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
   const pat = [];
   const retiradas = [];
   const labels = [];
-  const dates = [];
-  const baseDate = App.state.lastModified ? new Date(App.state.lastModified) : new Date();
 
   if (saldoInicial <= 0) {
     return {
@@ -82,7 +77,6 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
       labels.push(label);
       pat.push(Math.round(saldo));
       retiradas.push(Math.round(totalRetirado));
-      dates.push(new Date(baseDate.getFullYear(), baseDate.getMonth() + meses, 1));
     }
 
     if (reachedZero) break;
@@ -95,21 +89,9 @@ function simularRetirada(saldoInicial, retiradaMensal, taxaAnual) {
     labels,
     pat,
     retiradas,
-    dates,
     esgotado: saldo <= 0,
     limitadoPeloHorizonte: saldo > 0 && meses >= App.MAX_SIMULATION_MONTHS,
   };
-}
-
-function formatTooltipLine(context) {
-  const value = Number(context?.parsed?.y ?? context?.raw ?? 0);
-  const formattedValue = App.fmtFull(value);
-  const pointDate = context?.dataset?.pointDates?.[context?.dataIndex];
-  if (pointDate) {
-    return `${formattedValue} em ${App.formatChartDate(pointDate)}`;
-  }
-
-  return context?.label ? `${formattedValue} em ${context.label}` : formattedValue;
 }
 
 function renderHtmlTooltip(chart, tooltip, tooltipEl) {
@@ -122,16 +104,28 @@ function renderHtmlTooltip(chart, tooltip, tooltipEl) {
     return;
   }
 
-  const dataPoint = tooltip.dataPoints?.[0];
-  const titleText = dataPoint?.dataset?.label ?? tooltip.title?.[0] ?? '';
-  const value = Number(dataPoint?.parsed?.y ?? dataPoint?.raw ?? 0);
-  const pointDate = dataPoint?.dataset?.pointDates?.[dataPoint?.dataIndex];
-  const formattedValue = App.fmtFull(value);
-  const formattedDate = pointDate ? App.formatChartDate(pointDate) : dataPoint?.label ?? '';
+  const dataPoints = tooltip.dataPoints || [];
+  const firstPoint = dataPoints[0];
+  const formattedDate = firstPoint?.label ?? '';
+
+  const rowsHtml = dataPoints.map(dataPoint => {
+    const value = Number(dataPoint?.parsed?.y ?? dataPoint?.raw ?? 0);
+    const formattedValue = App.fmtFull(value);
+    const label = dataPoint?.dataset?.label ?? '';
+    const color = dataPoint?.dataset?.borderColor ?? 'transparent';
+
+    return `
+      <div class="chart-tooltip__row">
+        <span class="chart-tooltip__dot" style="background:${App.escapeHtml(color)}"></span>
+        <span class="chart-tooltip__title">${App.escapeHtml(label)}</span>
+        <span class="chart-tooltip__value">${App.escapeHtml(formattedValue)}</span>
+      </div>
+    `;
+  }).join('');
 
   tooltipEl.innerHTML = `
-    <span class="chart-tooltip__title">${App.escapeHtml(titleText)}</span>
-    <div class="chart-tooltip__line"><span class="chart-tooltip__value">${App.escapeHtml(formattedValue)}</span> <span class="chart-tooltip__em">em</span> <span class="chart-tooltip__date">${App.escapeHtml(formattedDate)}</span></div>
+    <div class="chart-tooltip__date">${App.escapeHtml(formattedDate)}</div>
+    ${rowsHtml}
   `;
 
   const canvasRect = chart.canvas.getBoundingClientRect();
@@ -390,31 +384,50 @@ function calcular(options = {}) {
   const chartTooltipEl = document.getElementById('chart-tooltip');
   const withdrawalChartTooltipEl = document.getElementById('withdrawal-chart-tooltip');
 
+  const chartLegendDotAportado = document.getElementById('chart-legend-dot-aportado');
+  if (chartLegendDotAportado) {
+    chartLegendDotAportado.style.background = chartTheme.aportadoLine;
+  }
+
   if (!shouldSkipPrimaryChartRebuild) {
     if (App.state.chartInst) App.state.chartInst.destroy();
+
+    const chartDatasets = chartScenarioSeries.map(({ scenario, result }) => {
+      const isSelectedSeries = scenario.id === App.state.selectedScenarioId;
+      const seriesColor = App.normalizeScenarioColor(scenario.color);
+
+      return {
+        label: 'Patrimônio projetado',
+        data: App.alignSeriesData(result.pat, chartLabels.length),
+        borderColor: seriesColor,
+        backgroundColor: isSelectedSeries ? App.hexToRgba(seriesColor, 0.16) : 'transparent',
+        fill: isSelectedSeries,
+        tension: 0.35,
+        pointRadius: 0,
+        borderWidth: isSelectedSeries ? 2.2 : 1.6,
+        borderDash: isSelectedSeries ? [] : [6, 4],
+      };
+    });
+
+    if (selectedScenario && chartScenarioSeries.length) {
+      chartDatasets.push({
+        label: 'Total aportado',
+        data: App.alignSeriesData(chartScenarioSeries[0].result.inv, chartLabels.length),
+        borderColor: chartTheme.aportadoLine,
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 0,
+        borderWidth: 1.6,
+        borderDash: [4, 4],
+      });
+    }
+
     App.state.chartInst = new Chart(document.getElementById('chart'), {
       type: 'line',
       data: {
         labels: chartLabels,
-        datasets: chartScenarioSeries.map(({ scenario, result }) => {
-          const isSelectedSeries = scenario.id === App.state.selectedScenarioId;
-          const seriesColor = App.normalizeScenarioColor(scenario.color);
-          const alignedValues = App.alignSeriesData(result.pat, chartLabels.length);
-          const alignedDates = App.alignSeriesData(result.dates, chartLabels.length);
-
-          return {
-            label: scenario.name,
-            data: alignedValues,
-            pointDates: alignedDates,
-            borderColor: seriesColor,
-            backgroundColor: isSelectedSeries ? App.hexToRgba(seriesColor, 0.16) : 'transparent',
-            fill: isSelectedSeries,
-            tension: 0.35,
-            pointRadius: 0,
-            borderWidth: isSelectedSeries ? 2.2 : 1.6,
-            borderDash: isSelectedSeries ? [] : [6, 4],
-          };
-        })
+        datasets: chartDatasets
       },
       options: {
         responsive: true,
@@ -448,6 +461,14 @@ function calcular(options = {}) {
     });
   }
 
+  const withdrawalPrimaryColor = selectedScenario ? App.normalizeScenarioColor(selectedScenario.color) : '#c8f060';
+
+  const withdrawalLegendDotPat = document.getElementById('withdrawal-legend-dot-pat');
+  if (withdrawalLegendDotPat) withdrawalLegendDotPat.style.background = withdrawalPrimaryColor;
+
+  const withdrawalLegendDotRetirado = document.getElementById('withdrawal-legend-dot-retirado');
+  if (withdrawalLegendDotRetirado) withdrawalLegendDotRetirado.style.background = chartTheme.aportadoLine;
+
   if (App.state.withdrawalChartInst) App.state.withdrawalChartInst.destroy();
   App.state.withdrawalChartInst = new Chart(document.getElementById('withdrawal-chart'), {
     type: 'line',
@@ -457,8 +478,8 @@ function calcular(options = {}) {
         {
           label: 'Patrimônio restante',
           data: retiradaProjection.pat,
-          borderColor: '#fbbf24',
-          backgroundColor: 'rgba(251,191,36,0.14)',
+          borderColor: withdrawalPrimaryColor,
+          backgroundColor: App.hexToRgba(withdrawalPrimaryColor, 0.16),
           fill: true,
           tension: 0.35,
           pointRadius: 0,
@@ -467,7 +488,7 @@ function calcular(options = {}) {
         {
           label: 'Total retirado',
           data: retiradaProjection.retiradas,
-          borderColor: '#4ade80',
+          borderColor: chartTheme.aportadoLine,
           backgroundColor: 'transparent',
           fill: false,
           tension: 0.35,
